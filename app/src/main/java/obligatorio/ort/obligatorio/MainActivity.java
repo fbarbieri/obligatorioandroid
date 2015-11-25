@@ -169,6 +169,7 @@ public class MainActivity extends AppCompatActivity implements NavigationDrawerF
                 public void onClick(View view) {
                     Location loc = getLastKnownLocation();
                     localizar(mMap, loc);
+
                 }
             });
 
