@@ -59,15 +59,14 @@ public class IniciarRecorridoActivity extends AppCompatActivity{
     private ImageButton mImageButton;
     private String mCurrentPhotoPath;
     public static final int SACAR_FOTO = 1;
-    public Location mLocation;
+    public int mImageButtonWidth;
+    public int mImageButtonHeight;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_iniciar_recorrido);
         mCodigoView = (EditText) findViewById(R.id.codigo_estacionamiento);
-        Intent intent = getIntent();
-        mLocation = intent.getParcelableExtra(getString(R.string.location));
 
         Button mGuardarRecorridoBtn = (Button) findViewById(R.id.guardar_recorrido);
         mGuardarRecorridoBtn.setOnClickListener(new OnClickListener() {
@@ -203,10 +202,6 @@ public class IniciarRecorridoActivity extends AppCompatActivity{
     }
 
     private void setPic() {
-        // Get the dimensions of the View
-        int targetW = mImageButton.getWidth();
-        int targetH = mImageButton.getHeight();
-
         // Get the dimensions of the bitmap
         BitmapFactory.Options bmOptions = new BitmapFactory.Options();
         bmOptions.inJustDecodeBounds = true;
@@ -215,8 +210,8 @@ public class IniciarRecorridoActivity extends AppCompatActivity{
         int photoH = bmOptions.outHeight;
 
         int scaleFactor = 1;
-        if ((targetW > 0) || (targetH > 0)) {
-            scaleFactor = Math.min(photoW/targetW, photoH/targetH);
+        if ((mImageButtonWidth > 0) || (mImageButtonHeight > 0)) {
+            scaleFactor = Math.min(photoW/mImageButtonWidth, photoH/mImageButtonHeight);
         }
 
         // Decode the image file into a Bitmap sized to fill the View
@@ -231,12 +226,16 @@ public class IniciarRecorridoActivity extends AppCompatActivity{
     private void savePreferences(){
         SharedPreferences.Editor editor = getPreferences(MODE_PRIVATE).edit();
         editor.putString("mCurrentPhotoPath", mCurrentPhotoPath);
+        editor.putInt("targetW", mImageButton.getWidth());
+        editor.putInt("targetH", mImageButton.getHeight());
         editor.commit();
     }
 
     private void restorePreferences() {
         SharedPreferences settings = getPreferences(MODE_PRIVATE);
         mCurrentPhotoPath = settings.getString("mCurrentPhotoPath", "");
+        mImageButtonWidth = settings.getInt("targetW", 1);
+        mImageButtonHeight = settings.getInt("targetH", 1);
     }
 
 }

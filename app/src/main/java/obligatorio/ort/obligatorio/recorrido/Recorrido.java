@@ -3,6 +3,7 @@ package obligatorio.ort.obligatorio.recorrido;
 import android.location.Location;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
 
@@ -11,13 +12,22 @@ import java.util.List;
  */
 public class Recorrido {
 
+    private Long id;
     private PuntoIntermedio origen;
     private List<PuntoIntermedio> puntos;
     private List<Location> recorrido;
     private String codigoEstacionamiento;
     private Boolean activo;
-    private Date fechaInicio;
-    private Date fechaFin;
+    private Timestamp fechaInicio;
+    private Timestamp fechaFin;
+
+    public Long getIid() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     public PuntoIntermedio getOrigen() {
         return origen;
@@ -51,16 +61,20 @@ public class Recorrido {
         this.codigoEstacionamiento = codigoEstacionamiento;
     }
 
-    public void setFechaInicio(Date fechaInicio) {
+    public void setFechaInicio(Timestamp fechaInicio) {
         this.fechaInicio = fechaInicio;
     }
 
-    public Date getFechaFin() {
+    public Timestamp getFechaFin() {
         return fechaFin;
     }
 
-    public Date getFechaInicio() {
+    public Timestamp getFechaInicio() {
         return fechaInicio;
+    }
+
+    public void setFechaFin(Timestamp fechaFin) {
+        this.fechaFin = fechaFin;
     }
 
     public Boolean getActivo() {
@@ -69,9 +83,5 @@ public class Recorrido {
 
     public void setActivo(Boolean activo) {
         this.activo = activo;
-    }
-
-    public void setFechaFin(Date fechaFin) {
-        this.fechaFin = fechaFin;
     }
 }

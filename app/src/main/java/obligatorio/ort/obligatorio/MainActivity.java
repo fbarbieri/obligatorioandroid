@@ -32,7 +32,9 @@ import android.widget.Button;
 
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -43,6 +45,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -50,8 +53,9 @@ import java.util.List;
 import obligatorio.ort.obligatorio.recorrido.PuntoIntermedio;
 import obligatorio.ort.obligatorio.recorrido.Recorrido;
 import obligatorio.ort.obligatorio.recorrido.RecorridoHolder;
+import obligatorio.ort.obligatorio.recorrido.RecorridoManager;
 
-public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback, LocationListener, View.OnClickListener {
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback, LocationListener, View.OnClickListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     private GoogleMap mMap;
     private Marker mark;
@@ -59,14 +63,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private Button btnIniciarRecorrido;
     private Location mLocation;
     private FloatingActionButton fab;
+    private GoogleApiClient mGoogleApiClient;
+    private RecorridoManager recorridoManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
+        buildGoogleApiClient();
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -84,19 +91,22 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mLocation = getLastKnownLocation();
-                localizar(mMap);
+                getLastKnownLocation();
             }
         });
         btnIniciarRecorrido = (Button) findViewById(R.id.btnIniciarRecorrido);
         btnIniciarRecorrido.setVisibility(View.VISIBLE);
         btnIniciarRecorrido.setOnClickListener(this);
+        recorridoManager = new RecorridoManager(this);
         if (RecorridoHolder.getInstance().getRecorrido() == null) {
-            //lo busco en base
+            Recorrido recorrido = recorridoManager.obtenerUltimoRecorrido(true);
+            if(recorrido!=null){
+                RecorridoHolder.getInstance().setRecorrido(recorrido);
+                esconderBotonIniciarRecorrido();
+            }
         } else {
             esconderBotonIniciarRecorrido();
         }
-        esconderBotonIniciarRecorrido();
     }
 
     @Override
@@ -156,21 +166,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         return true;
     }
 
+    protected synchronized void buildGoogleApiClient() {
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
+    }
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-
-        mLocation = getLastKnownLocation();
-        localizar(mMap);
-
-        LocationManager mLocationManager = (LocationManager) getApplication().getSystemService(LOCATION_SERVICE);
-
-        if (mLocationManager != null) {
-            if (PermissionChecker.checkCallingOrSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                    || PermissionChecker.checkCallingOrSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 100, this);
-            }
-        }
+        getLastKnownLocation();
     }
 
     @Override
@@ -178,7 +185,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         switch (v.getId()) {
             case R.id.btnIniciarRecorrido:
                 Intent iniciarRecorrido = new Intent(this, IniciarRecorridoActivity.class);
-                iniciarRecorrido.putExtra(getString(R.string.location),mLocation);
                 startActivityForResult(iniciarRecorrido, INICIAR_RECORRIDO);
                 break;
         }
@@ -203,10 +209,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         recorrido.setCodigoEstacionamiento(codigoEstacionamiento);
                         recorrido.setOrigen(primerPI);
                         recorrido.setActivo(true);
-                        recorrido.setFechaInicio(new Date());
+                        recorrido.setFechaInicio(new Timestamp(System.currentTimeMillis()));
                         recorrido.setRecorrido(new ArrayList<Location>());
+                        recorrido.setPuntos(new ArrayList<PuntoIntermedio>());
                         RecorridoHolder.getInstance().setRecorrido(recorrido);
 
+                        recorridoManager.AgregarRecorrido(recorrido);
                         esconderBotonIniciarRecorrido();
 
                     }
@@ -219,23 +227,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         btnIniciarRecorrido.setVisibility(View.GONE);
         btnIniciarRecorrido.setVisibility(View.INVISIBLE);
 
-        ViewGroup.LayoutParams lp = ((ViewGroup) fab.getRootView()).getLayoutParams();
-        if( lp instanceof ViewGroup.MarginLayoutParams)
-        {
-            ((ViewGroup.MarginLayoutParams) lp).bottomMargin = 16;
-        }
+        ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) fab.getLayoutParams();
+        params.setMargins(params.leftMargin, params.topMargin, params.rightMargin , params.rightMargin);
+        fab.setLayoutParams(params);
     }
 
-    private void localizar(GoogleMap mapa) {
-
+    private void localizar() {
         if (mLocation != null) {
-
             final LatLng pos = new LatLng(mLocation.getLatitude(),
                     mLocation.getLongitude());
-            mapa.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 17));
-
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 17));
             if (mark == null) {
-                mark = mapa
+                mark = mMap
                         .addMarker(new MarkerOptions()
                                 .position(
                                         new LatLng(mLocation.getLatitude(),
@@ -249,28 +252,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
-    private Location getLastKnownLocation() {
-        LocationManager mLocationManager = (LocationManager) getApplication()
-                .getSystemService(LOCATION_SERVICE);
-        List<String> providers = mLocationManager.getProviders(true);
-        Location bestLocation = null;
-        for (String provider : providers) {
-            Location l = null;
-            if (checkCallingOrSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                    || checkCallingOrSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                l = mLocationManager.getLastKnownLocation(provider);
-            }
+    private void getLastKnownLocation() {
+        mLocation = LocationServices.FusedLocationApi.getLastLocation(
+                mGoogleApiClient);
+        LocationManager mLocationManager = (LocationManager) getApplication().getSystemService(LOCATION_SERVICE);
 
-            if (l == null) {
-                continue;
-            }
-            if (bestLocation == null
-                    || l.getAccuracy() < bestLocation.getAccuracy()) {
-                // Found best last known location: %s", l);
-                bestLocation = l;
+        if (mLocationManager != null) {
+            if (PermissionChecker.checkCallingOrSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 3000, 10, this);
             }
         }
-        return bestLocation;
+        localizar();
     }
 
     public void animateMarker(final Marker marker, final LatLng toPosition,
@@ -332,11 +324,27 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     public void onStart() {
         super.onStart();
+        mGoogleApiClient.connect();
     }
 
     @Override
     public void onStop() {
         super.onStop();
+        mGoogleApiClient.disconnect();
     }
 
+    @Override
+    public void onConnected(Bundle bundle) {
+        getLastKnownLocation();
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+
+    }
 }

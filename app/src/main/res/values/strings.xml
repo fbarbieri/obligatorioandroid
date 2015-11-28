@@ -14,7 +14,7 @@
     <string name="btnCrearRecorrido">Crear recorrido</string>
     <string name="title_activity_iniciar_recorrido">Iniciar recorrido</string>
 
-    <string name="prompt_codigo_est">Codigo</string>
+    <string name="prompt_codigo_est">Codigo de estacionamiento</string>
     <string name="guardar_recorrido">Guardar recorrido</string>
     <string name="error_codigo_requerido">El codigo es requerido</string>
 
