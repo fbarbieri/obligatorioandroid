@@ -1,18 +1,25 @@
 <resources>
-    <string name="app_name">Obligatorio</string>
+    <string name="app_name">Estacionamientos</string>
     <string name="action_settings">Settings</string>
     <string name="action_menu">Menu</string>
     <string name="mainActivity">Estacionamientos</string>
-    <string name="title_activity_main2">MainActivity2</string>
-
-    <string name="title_section1">Section 1</string>
-    <string name="title_section2">Section 2</string>
-    <string name="title_section3">Section 3</string>
+    <string name="title_activity_main">MainActivity</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
-    <string name="action_example">Example action</string>
     <string name="title_activity_maps">Map</string>
     <string name="title_activity_maps_fragment">Map</string>
+    <string name="btnRecorrido">Iniciar recorrido</string>
+    <string name="btnCrearRecorrido">Crear recorrido</string>
+    <string name="title_activity_iniciar_recorrido">Iniciar recorrido</string>
+
+    <string name="prompt_codigo_est">Codigo</string>
+    <string name="guardar_recorrido">Guardar recorrido</string>
+    <string name="error_codigo_requerido">El codigo es requerido</string>
+
+    <string name="foto_result">recorrido_foto_path</string>
+    <string name="location">location</string>
+    <string name="codigo_estacionamiento">codigo_est</string>
+
 </resources>

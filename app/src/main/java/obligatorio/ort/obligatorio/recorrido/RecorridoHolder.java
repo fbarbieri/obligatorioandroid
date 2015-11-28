@@ -13,7 +13,7 @@ public class RecorridoHolder {
         this.recorrido = recorrido;
     }
 
-    public static RecorridoHolder getInstance() {
+    public static synchronized RecorridoHolder getInstance() {
 
         if (instance == null) {
             instance = new RecorridoHolder();

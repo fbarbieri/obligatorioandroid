@@ -1,121 +1,119 @@
 package obligatorio.ort.obligatorio;
 
 import android.Manifest;
-import android.annotation.TargetApi;
-import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
+import android.provider.MediaStore;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.content.PermissionChecker;
+import android.view.View;
+import android.support.design.widget.NavigationView;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.app.ActionBar;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.content.Context;
-import android.os.Bundle;
-import android.view.LayoutInflater;
+import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.view.ViewGroup;
-import android.support.v4.widget.DrawerLayout;
 import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
+import android.widget.Button;
 
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapView;
-import com.google.android.gms.maps.MapsInitializer;
+import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.Projection;
+import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements NavigationDrawerFragment.NavigationDrawerCallbacks {
+import obligatorio.ort.obligatorio.recorrido.PuntoIntermedio;
+import obligatorio.ort.obligatorio.recorrido.Recorrido;
+import obligatorio.ort.obligatorio.recorrido.RecorridoHolder;
 
-    private NavigationDrawerFragment mNavigationDrawerFragment;
-    private CharSequence mTitle;
-    private static final int MY_PERMISSION_ACCESS_COURSE_LOCATION = 1;
-    public static FragmentManager fragmentManager;
-    public static Context context;
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback, LocationListener, View.OnClickListener {
+
+    private GoogleMap mMap;
+    private Marker mark;
+    public static final int INICIAR_RECORRIDO = 1;
+    private Button btnIniciarRecorrido;
+    private Location mLocation;
+    private FloatingActionButton fab;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        fragmentManager = getSupportFragmentManager();
-        context = getApplication();
-        mNavigationDrawerFragment = (NavigationDrawerFragment)
-                getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
-        mTitle = getTitle();
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
-        // Set up the drawer.
-        mNavigationDrawerFragment.setUp(
-                R.id.navigation_drawer,
-                (DrawerLayout) findViewById(R.id.drawer_layout));
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.setDrawerListener(toggle);
+        toggle.syncState();
 
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
+        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
 
-            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_COARSE_LOCATION},
-                    MY_PERMISSION_ACCESS_COURSE_LOCATION);
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+
+        fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mLocation = getLastKnownLocation();
+                localizar(mMap);
+            }
+        });
+        btnIniciarRecorrido = (Button) findViewById(R.id.btnIniciarRecorrido);
+        btnIniciarRecorrido.setVisibility(View.VISIBLE);
+        btnIniciarRecorrido.setOnClickListener(this);
+        if (RecorridoHolder.getInstance().getRecorrido() == null) {
+            //lo busco en base
+        } else {
+            esconderBotonIniciarRecorrido();
         }
-
+        esconderBotonIniciarRecorrido();
     }
 
     @Override
-    public void onNavigationDrawerItemSelected(int position) {
-        // update the main content by replacing fragments
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        FragmentTransaction ft = fragmentManager.beginTransaction();
-        ft.add(R.id.container, PlaceholderFragment.newInstance(position + 1));
-        ft.commit();
-    }
-
-
-    public void onSectionAttached(int number) {
-        switch (number) {
-            case 1:
-                mTitle = getString(R.string.title_section1);
-                break;
-            case 2:
-                mTitle = getString(R.string.title_section2);
-                break;
-            case 3:
-                mTitle = getString(R.string.title_section3);
-                break;
+    public void onBackPressed() {
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        if (drawer.isDrawerOpen(GravityCompat.START)) {
+            drawer.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
         }
     }
-
-    public void restoreActionBar() {
-        ActionBar actionBar = getSupportActionBar();
-        actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
-        actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setTitle(mTitle);
-    }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        if (!mNavigationDrawerFragment.isDrawerOpen()) {
-            // Only show items in the action bar relevant to this screen
-            // if the drawer is not showing. Otherwise, let the drawer
-            // decide what to show in the action bar.
-            getMenuInflater().inflate(R.menu.main_activity, menu);
-            restoreActionBar();
-            return true;
-        }
-        return super.onCreateOptionsMenu(menu);
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
     }
 
     @Override
@@ -133,189 +131,212 @@ public class MainActivity extends AppCompatActivity implements NavigationDrawerF
         return super.onOptionsItemSelected(item);
     }
 
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    public static class PlaceholderFragment extends Fragment implements LocationListener{
+    @SuppressWarnings("StatementWithEmptyBody")
+    @Override
+    public boolean onNavigationItemSelected(MenuItem item) {
+        // Handle navigation view item clicks here.
+        int id = item.getItemId();
 
-        private static final String ARG_SECTION_NUMBER = "section_number";
+        if (id == R.id.nav_camera) {
+            // Handle the camera action
+        } else if (id == R.id.nav_gallery) {
 
-        private static Marker mark;
-        private static GoogleMap mMap;
-        private static MapView mapView;
+        } else if (id == R.id.nav_slideshow) {
 
-        public static PlaceholderFragment newInstance(int sectionNumber) {
-            PlaceholderFragment fragment = new PlaceholderFragment();
-            Bundle args = new Bundle();
-            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-            fragment.setArguments(args);
-            return fragment;
+        } else if (id == R.id.nav_manage) {
+
+        } else if (id == R.id.nav_share) {
+
+        } else if (id == R.id.nav_send) {
+
         }
 
-        public PlaceholderFragment() {
-        }
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        drawer.closeDrawer(GravityCompat.START);
+        return true;
+    }
 
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_main_activity, container, false);
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
 
-            mapView = (MapView) rootView.findViewById(R.id.mapview);
-            mapView.onCreate(savedInstanceState);
+        mLocation = getLastKnownLocation();
+        localizar(mMap);
 
-            FloatingActionButton fab = (FloatingActionButton) rootView.findViewById(R.id.fabLocalizar);
-            fab.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    Location loc = getLastKnownLocation();
-                    localizar(mMap, loc);
+        LocationManager mLocationManager = (LocationManager) getApplication().getSystemService(LOCATION_SERVICE);
 
-                }
-            });
-
-            MapsInitializer.initialize(this.getActivity());
-            mMap = mapView.getMap();
-            Location loc = getLastKnownLocation();
-            localizar(mMap, loc);
-
-            LocationManager mLocationManager = (LocationManager) context.getSystemService(LOCATION_SERVICE);
-
-            if (mLocationManager != null) {
-                if (PermissionChecker.checkCallingOrSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                        || PermissionChecker.checkCallingOrSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                    mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, this);
-                }
-            }
-
-            return rootView;
-        }
-
-        @Override
-        public void onAttach(Activity activity) {
-            super.onAttach(activity);
-            ((MainActivity) activity).onSectionAttached(
-                    getArguments().getInt(ARG_SECTION_NUMBER));
-        }
-
-        private static void localizar(GoogleMap mapa, Location location) {
-
-            if (location != null) {
-
-                final LatLng pos = new LatLng(location.getLatitude(),
-                        location.getLongitude());
-                mapa.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 20));
-
-                if (mark == null) {
-                    mark = mapa
-                            .addMarker(new MarkerOptions()
-                                    .position(
-                                            new LatLng(location.getLatitude(),
-                                                    location.getLongitude()))
-                                    .title("Aca")
-                                    .icon(BitmapDescriptorFactory
-                                            .defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
-                } else {
-                    animateMarker(mark, pos, false);
-                }
+        if (mLocationManager != null) {
+            if (PermissionChecker.checkCallingOrSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                    || PermissionChecker.checkCallingOrSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 100, this);
             }
         }
+    }
 
-        @TargetApi(23)
-        private static Location getLastKnownLocation() {
-            LocationManager mLocationManager = (LocationManager) context
-                    .getSystemService(LOCATION_SERVICE);
-            List<String> providers = mLocationManager.getProviders(true);
-            Location bestLocation = null;
-            for (String provider : providers) {
-                Location l = null;
-                if (context.checkCallingOrSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                        || context.checkCallingOrSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                    l = mLocationManager.getLastKnownLocation(provider);
-                }
-
-                if (l == null) {
-                    continue;
-                }
-                if (bestLocation == null
-                        || l.getAccuracy() < bestLocation.getAccuracy()) {
-                    // Found best last known location: %s", l);
-                    bestLocation = l;
-                }
-            }
-            return bestLocation;
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.btnIniciarRecorrido:
+                Intent iniciarRecorrido = new Intent(this, IniciarRecorridoActivity.class);
+                iniciarRecorrido.putExtra(getString(R.string.location),mLocation);
+                startActivityForResult(iniciarRecorrido, INICIAR_RECORRIDO);
+                break;
         }
+    }
 
-        public static void animateMarker(final Marker marker, final LatLng toPosition,
-                                  final boolean hideMarker) {
-            final Handler handler = new Handler();
-            final long start = SystemClock.uptimeMillis();
-            Projection proj = mMap.getProjection();
-            Point startPoint = proj.toScreenLocation(marker.getPosition());
-            final LatLng startLatLng = proj.fromScreenLocation(startPoint);
-            final long duration = 500;
-            final Interpolator interpolator = new LinearInterpolator();
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    long elapsed = SystemClock.uptimeMillis() - start;
-                    float t = interpolator.getInterpolation((float) elapsed
-                            / duration);
-                    double lng = t * toPosition.longitude + (1 - t)
-                            * startLatLng.longitude;
-                    double lat = t * toPosition.latitude + (1 - t)
-                            * startLatLng.latitude;
-                    marker.setPosition(new LatLng(lat, lng));
-                    if (t < 1.0) {
-                        // Post again 16ms later.
-                        handler.postDelayed(this, 16);
-                    } else {
-                        if (hideMarker) {
-                            marker.setVisible(false);
-                        } else {
-                            marker.setVisible(true);
-                        }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case INICIAR_RECORRIDO:
+                if (resultCode == RESULT_OK) {
+                    if(data.getExtras()!=null || data.getExtras().size()>0){
+                        String fotoPath = data.getStringExtra(getString(R.string.foto_result));
+                        String codigoEstacionamiento = data.getStringExtra(getString(R.string.codigo_estacionamiento));
+
+                        PuntoIntermedio primerPI = new PuntoIntermedio();
+                        primerPI.setDescripcion(getString(R.string.guardar_recorrido));
+                        primerPI.setRutaDeFoto(fotoPath);
+                        primerPI.setTitulo(getString(R.string.guardar_recorrido));
+                        primerPI.setUbicacion(mLocation);
+
+                        Recorrido recorrido = new Recorrido();
+                        recorrido.setCodigoEstacionamiento(codigoEstacionamiento);
+                        recorrido.setOrigen(primerPI);
+                        recorrido.setActivo(true);
+                        recorrido.setFechaInicio(new Date());
+                        recorrido.setRecorrido(new ArrayList<Location>());
+                        RecorridoHolder.getInstance().setRecorrido(recorrido);
+
+                        esconderBotonIniciarRecorrido();
+
                     }
                 }
-            });
+                break;
         }
+    }
 
-        @Override
-        public void onResume() {
-            mapView.onResume();
-            super.onResume();
+    private void esconderBotonIniciarRecorrido(){
+        btnIniciarRecorrido.setVisibility(View.GONE);
+        btnIniciarRecorrido.setVisibility(View.INVISIBLE);
+
+        ViewGroup.LayoutParams lp = ((ViewGroup) fab.getRootView()).getLayoutParams();
+        if( lp instanceof ViewGroup.MarginLayoutParams)
+        {
+            ((ViewGroup.MarginLayoutParams) lp).bottomMargin = 16;
         }
+    }
 
-        @Override
-        public void onDestroy() {
-            super.onDestroy();
-            mapView.onDestroy();
+    private void localizar(GoogleMap mapa) {
+
+        if (mLocation != null) {
+
+            final LatLng pos = new LatLng(mLocation.getLatitude(),
+                    mLocation.getLongitude());
+            mapa.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 17));
+
+            if (mark == null) {
+                mark = mapa
+                        .addMarker(new MarkerOptions()
+                                .position(
+                                        new LatLng(mLocation.getLatitude(),
+                                                mLocation.getLongitude()))
+                                .title("Aca")
+                                .icon(BitmapDescriptorFactory
+                                        .defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+            } else {
+                animateMarker(mark, pos, false);
+            }
         }
+    }
 
-        @Override
-        public void onLowMemory() {
-            super.onLowMemory();
-            mapView.onLowMemory();
+    private Location getLastKnownLocation() {
+        LocationManager mLocationManager = (LocationManager) getApplication()
+                .getSystemService(LOCATION_SERVICE);
+        List<String> providers = mLocationManager.getProviders(true);
+        Location bestLocation = null;
+        for (String provider : providers) {
+            Location l = null;
+            if (checkCallingOrSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                    || checkCallingOrSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                l = mLocationManager.getLastKnownLocation(provider);
+            }
+
+            if (l == null) {
+                continue;
+            }
+            if (bestLocation == null
+                    || l.getAccuracy() < bestLocation.getAccuracy()) {
+                // Found best last known location: %s", l);
+                bestLocation = l;
+            }
         }
+        return bestLocation;
+    }
 
-        @Override
-        public void onLocationChanged(Location location) {
-            localizar(mMap, location);
+    public void animateMarker(final Marker marker, final LatLng toPosition,
+                              final boolean hideMarker) {
+        final Handler handler = new Handler();
+        final long start = SystemClock.uptimeMillis();
+        Projection proj = mMap.getProjection();
+        Point startPoint = proj.toScreenLocation(marker.getPosition());
+        final LatLng startLatLng = proj.fromScreenLocation(startPoint);
+        final long duration = 500;
+        final Interpolator interpolator = new LinearInterpolator();
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                long elapsed = SystemClock.uptimeMillis() - start;
+                float t = interpolator.getInterpolation((float) elapsed
+                        / duration);
+                double lng = t * toPosition.longitude + (1 - t)
+                        * startLatLng.longitude;
+                double lat = t * toPosition.latitude + (1 - t)
+                        * startLatLng.latitude;
+                marker.setPosition(new LatLng(lat, lng));
+                if (t < 1.0) {
+                    // Post again 16ms later.
+                    handler.postDelayed(this, 16);
+                } else {
+                    if (hideMarker) {
+                        marker.setVisible(false);
+                    } else {
+                        marker.setVisible(true);
+                    }
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        if(RecorridoHolder.getInstance().getRecorrido()!=null){
+            RecorridoHolder.getInstance().getRecorrido().getRecorrido().add(location);
         }
+    }
 
-        @Override
-        public void onStatusChanged(String provider, int status, Bundle extras) {
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
 
-        }
+    }
 
-        @Override
-        public void onProviderEnabled(String provider) {
+    @Override
+    public void onProviderEnabled(String provider) {
 
-        }
+    }
 
-        @Override
-        public void onProviderDisabled(String provider) {
+    @Override
+    public void onProviderDisabled(String provider) {
 
-        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
     }
 
 }
