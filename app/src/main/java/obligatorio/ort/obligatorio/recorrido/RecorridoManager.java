@@ -26,7 +26,7 @@ public class RecorridoManager {
         db = recorridoBD.getReadableDatabase();
     }
 
-    public void AgregarRecorrido(Recorrido recorrido){
+    public Recorrido AgregarRecorrido(Recorrido recorrido){
         ContentValues values = new ContentValues();
         values.put(RECORRIDO_FECHA_INICIO,recorrido.getFechaInicio().getTime());
         if(recorrido.getFechaFin()!=null)
@@ -34,14 +34,11 @@ public class RecorridoManager {
         values.put(RECORRIDO_EST_COD,recorrido.getCodigoEstacionamiento());
         values.put(RECORRIDO_ACTIVO,recorrido.getActivo());
 
-        for(int i = 0; i<5000; i++){
-            recorrido.getPuntos().add(recorrido.getOrigen());
-            recorrido.getRecorrido().add(recorrido.getOrigen().getUbicacion());
-        }
-
         String extraData = new Gson().toJson(recorrido);
-        values.put(RECORRIDO_EXTRA_DATA,extraData);
-        db.insertOrThrow(RECORRIDO_TABLA,null,values);
+        values.put(RECORRIDO_EXTRA_DATA, extraData);
+        Long id = db.insertOrThrow(RECORRIDO_TABLA,null,values);
+        recorrido.setId(id);
+        return recorrido;
     }
 
     public Recorrido obtenerUltimoRecorrido(Boolean activo){
@@ -50,10 +47,24 @@ public class RecorridoManager {
         String[] args = {flag+""};
         Cursor cursor = db.query(RECORRIDO_TABLA, FROM, "activo = ?", args, null, null, ORDER_BY);
         if(cursor.moveToNext()){
-            String extraData = cursor.getString(0);
             recorrido = new Gson().fromJson(cursor.getString(1),Recorrido.class);
+            recorrido.setId(cursor.getLong(0));
         }
         return recorrido;
+    }
+
+    public void actualizarRecorrido(Recorrido recorrido){
+        ContentValues values = new ContentValues();
+        values.put(RECORRIDO_FECHA_INICIO,recorrido.getFechaInicio().getTime());
+        if(recorrido.getFechaFin()!=null)
+            values.put(RECORRIDO_FECHA_FIN,recorrido.getFechaFin().getTime());
+        values.put(RECORRIDO_EST_COD,recorrido.getCodigoEstacionamiento());
+        values.put(RECORRIDO_ACTIVO,recorrido.getActivo());
+
+        String extraData = new Gson().toJson(recorrido);
+        values.put(RECORRIDO_EXTRA_DATA,extraData);
+        String[] args = {recorrido.getIid().toString()};
+        db.update(RECORRIDO_TABLA, values, _ID + " = ?", args);
     }
 
     public void limpiarBase(){

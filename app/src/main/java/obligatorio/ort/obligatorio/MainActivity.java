@@ -3,17 +3,14 @@ package obligatorio.ort.obligatorio;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
-import android.provider.MediaStore;
-import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.content.PermissionChecker;
 import android.view.View;
@@ -30,8 +27,6 @@ import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.Button;
 
-import com.google.android.gms.appindexing.Action;
-import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
@@ -44,12 +39,13 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
+import obligatorio.ort.obligatorio.Servicios.EstacionamientosServices;
 import obligatorio.ort.obligatorio.recorrido.PuntoIntermedio;
 import obligatorio.ort.obligatorio.recorrido.Recorrido;
 import obligatorio.ort.obligatorio.recorrido.RecorridoHolder;
@@ -65,6 +61,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private FloatingActionButton fab;
     private GoogleApiClient mGoogleApiClient;
     private RecorridoManager recorridoManager;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,15 +95,25 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         btnIniciarRecorrido.setVisibility(View.VISIBLE);
         btnIniciarRecorrido.setOnClickListener(this);
         recorridoManager = new RecorridoManager(this);
+        //recorridoManager.limpiarBase();
         if (RecorridoHolder.getInstance().getRecorrido() == null) {
             Recorrido recorrido = recorridoManager.obtenerUltimoRecorrido(true);
             if(recorrido!=null){
                 RecorridoHolder.getInstance().setRecorrido(recorrido);
+                mLocation = new Location(LocationManager.GPS_PROVIDER);
+                mLocation.setLatitude(recorrido.getOrigen().getUbicacion().latitude);
+                mLocation.setLongitude(recorrido.getOrigen().getUbicacion().longitude);
                 esconderBotonIniciarRecorrido();
             }
         } else {
+            mLocation = new Location(LocationManager.GPS_PROVIDER);
+            mLocation.setLatitude(RecorridoHolder.getInstance().getRecorrido().getOrigen().getUbicacion().latitude);
+            mLocation.setLongitude(RecorridoHolder.getInstance().getRecorrido().getOrigen().getUbicacion().longitude);
             esconderBotonIniciarRecorrido();
         }
+
+        EstacionamientosServices.iniciarRecorrido("1232");
+        EstacionamientosServices.obtenerAvisos("1232", 23);
     }
 
     @Override
@@ -178,6 +185,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         getLastKnownLocation();
+        if (RecorridoHolder.getInstance().getRecorrido() != null) {
+            dibujarRecorrido();
+        }
+
     }
 
     @Override
@@ -185,6 +196,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         switch (v.getId()) {
             case R.id.btnIniciarRecorrido:
                 Intent iniciarRecorrido = new Intent(this, IniciarRecorridoActivity.class);
+                iniciarRecorrido.putExtra(getString(R.string.location),mLocation);
                 startActivityForResult(iniciarRecorrido, INICIAR_RECORRIDO);
                 break;
         }
@@ -198,23 +210,26 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     if(data.getExtras()!=null || data.getExtras().size()>0){
                         String fotoPath = data.getStringExtra(getString(R.string.foto_result));
                         String codigoEstacionamiento = data.getStringExtra(getString(R.string.codigo_estacionamiento));
+                        Location location = data.getParcelableExtra(getString(R.string.location));
 
                         PuntoIntermedio primerPI = new PuntoIntermedio();
                         primerPI.setDescripcion(getString(R.string.guardar_recorrido));
                         primerPI.setRutaDeFoto(fotoPath);
                         primerPI.setTitulo(getString(R.string.guardar_recorrido));
-                        primerPI.setUbicacion(mLocation);
+
+                        LatLng inicio = new LatLng(location.getLatitude(), location.getLongitude());
+                        primerPI.setUbicacion(inicio);
 
                         Recorrido recorrido = new Recorrido();
                         recorrido.setCodigoEstacionamiento(codigoEstacionamiento);
                         recorrido.setOrigen(primerPI);
                         recorrido.setActivo(true);
                         recorrido.setFechaInicio(new Timestamp(System.currentTimeMillis()));
-                        recorrido.setRecorrido(new ArrayList<Location>());
+                        recorrido.setRecorrido(new ArrayList<LatLng>());
                         recorrido.setPuntos(new ArrayList<PuntoIntermedio>());
-                        RecorridoHolder.getInstance().setRecorrido(recorrido);
 
-                        recorridoManager.AgregarRecorrido(recorrido);
+                        recorrido = recorridoManager.AgregarRecorrido(recorrido);
+                        RecorridoHolder.getInstance().setRecorrido(recorrido);
                         esconderBotonIniciarRecorrido();
 
                     }
@@ -253,10 +268,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void getLastKnownLocation() {
-        mLocation = LocationServices.FusedLocationApi.getLastLocation(
-                mGoogleApiClient);
-        LocationManager mLocationManager = (LocationManager) getApplication().getSystemService(LOCATION_SERVICE);
+        if(mLocation==null)
+            mLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
 
+        LocationManager mLocationManager = (LocationManager) getApplication().getSystemService(LOCATION_SERVICE);
         if (mLocationManager != null) {
             if (PermissionChecker.checkCallingOrSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 3000, 10, this);
@@ -301,9 +316,30 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     public void onLocationChanged(Location location) {
+        LatLng nuevaLocation = new LatLng(location.getLatitude(), location.getLongitude());
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(nuevaLocation, 17));
         if(RecorridoHolder.getInstance().getRecorrido()!=null){
-            RecorridoHolder.getInstance().getRecorrido().getRecorrido().add(location);
+
+            List<LatLng> recorrido = RecorridoHolder.getInstance().getRecorrido().getRecorrido();
+            if(recorrido.size()>0){
+                LatLng lastLocation = recorrido.get(recorrido.size() - 1);
+                mMap.addPolyline(new PolylineOptions()
+                        .add(lastLocation, nuevaLocation)
+                        .width(5)
+                        .color(Color.BLUE)
+                );
+            }
+            RecorridoHolder.getInstance().getRecorrido().getRecorrido().add(nuevaLocation);
+            recorridoManager.actualizarRecorrido(RecorridoHolder.getInstance().getRecorrido());
         }
+
+    }
+
+    private void dibujarRecorrido(){
+        mMap.addPolyline(new PolylineOptions()
+                .addAll(RecorridoHolder.getInstance().getRecorrido().getRecorrido())
+                .width(5)
+                .color(Color.RED));
     }
 
     @Override

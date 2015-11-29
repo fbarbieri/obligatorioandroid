@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import obligatorio.ort.obligatorio.Servicios.EstacionamientosServices;
 import obligatorio.ort.obligatorio.recorrido.PuntoIntermedio;
 import obligatorio.ort.obligatorio.recorrido.Recorrido;
 
@@ -61,13 +62,18 @@ public class IniciarRecorridoActivity extends AppCompatActivity{
     public static final int SACAR_FOTO = 1;
     public int mImageButtonWidth;
     public int mImageButtonHeight;
+    public Location mLocation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_iniciar_recorrido);
-        mCodigoView = (EditText) findViewById(R.id.codigo_estacionamiento);
 
+        EstacionamientosServices.pruebaEstacionamiento();
+
+
+        mCodigoView = (EditText) findViewById(R.id.codigo_estacionamiento);
+        mCodigoView.clearFocus();
         Button mGuardarRecorridoBtn = (Button) findViewById(R.id.guardar_recorrido);
         mGuardarRecorridoBtn.setOnClickListener(new OnClickListener() {
             @Override
@@ -75,7 +81,8 @@ public class IniciarRecorridoActivity extends AppCompatActivity{
                 guardarRecorrido();
             }
         });
-
+        Intent intent = getIntent();
+        mLocation = intent.getParcelableExtra(getString(R.string.location));
         mIniciarRecorridoFormView = findViewById(R.id.iniciar_recorrido_form);
         mProgressView = findViewById(R.id.iniciar_recorrido_progress);
 
@@ -113,26 +120,15 @@ public class IniciarRecorridoActivity extends AppCompatActivity{
         boolean cancel = false;
         View focusView = null;
 
-        // Check for a valid email address.
-        if (TextUtils.isEmpty(codigoEstacionamiento)) {
-            mCodigoView.setError(getString(R.string.error_codigo_requerido));
-            focusView = mCodigoView;
-            cancel = true;
-        }
-        if (cancel) {
-            focusView.requestFocus();
-        } else {
-            showProgress(true);
+        showProgress(true);
+        // guardar en base y mandar el codigo a backend
+        Intent resultIntent = new Intent();
+        resultIntent.putExtra(getString(R.string.foto_result), mCurrentPhotoPath);
+        resultIntent.putExtra(getString(R.string.codigo_estacionamiento), codigoEstacionamiento);
+        resultIntent.putExtra(getString(R.string.location), mLocation);
+        setResult(Activity.RESULT_OK, resultIntent);
+        finish();
 
-
-
-            // guardar en base y mandar el codigo a backend
-            Intent resultIntent = new Intent();
-            resultIntent.putExtra(getString(R.string.foto_result), mCurrentPhotoPath);
-            resultIntent.putExtra(getString(R.string.codigo_estacionamiento), codigoEstacionamiento);
-            setResult(Activity.RESULT_OK, resultIntent);
-            finish();
-        }
     }
 
     /**

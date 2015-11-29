@@ -2,6 +2,8 @@ package obligatorio.ort.obligatorio.recorrido;
 
 import android.location.Location;
 
+import com.google.android.gms.maps.model.LatLng;
+
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.Date;
@@ -15,7 +17,7 @@ public class Recorrido {
     private Long id;
     private PuntoIntermedio origen;
     private List<PuntoIntermedio> puntos;
-    private List<Location> recorrido;
+    private List<LatLng> recorrido;
     private String codigoEstacionamiento;
     private Boolean activo;
     private Timestamp fechaInicio;
@@ -45,11 +47,11 @@ public class Recorrido {
         this.puntos = puntos;
     }
 
-    public List<Location> getRecorrido() {
+    public List<LatLng> getRecorrido() {
         return recorrido;
     }
 
-    public void setRecorrido(List<Location> recorrido) {
+    public void setRecorrido(List<LatLng> recorrido) {
         this.recorrido = recorrido;
     }
 

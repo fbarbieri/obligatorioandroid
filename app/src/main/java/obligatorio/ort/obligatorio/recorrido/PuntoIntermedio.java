@@ -2,11 +2,12 @@ package obligatorio.ort.obligatorio.recorrido;
 
 import android.location.Location;
 
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 
 public class PuntoIntermedio {
 
-    private Location ubicacion;
+    private LatLng ubicacion;
     private String rutaDeFoto;
     private String titulo;
     private String descripcion;
@@ -23,11 +24,11 @@ public class PuntoIntermedio {
         this.rutaDeFoto = rutaDeFoto;
     }
 
-    public Location getUbicacion() {
+    public LatLng getUbicacion() {
         return ubicacion;
     }
 
-    public void setUbicacion(Location ubicacion) {
+    public void setUbicacion(LatLng ubicacion) {
         this.ubicacion = ubicacion;
     }
 
