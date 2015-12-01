@@ -1,6 +1,8 @@
 package obligatorio.ort.obligatorio;
 
 import android.Manifest;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -35,7 +37,9 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -46,22 +50,39 @@ import java.util.ArrayList;
 import java.util.List;
 
 import obligatorio.ort.obligatorio.Servicios.EstacionamientosServices;
+import obligatorio.ort.obligatorio.estacionamiento.Estacionamiento;
 import obligatorio.ort.obligatorio.recorrido.PuntoIntermedio;
 import obligatorio.ort.obligatorio.recorrido.Recorrido;
 import obligatorio.ort.obligatorio.recorrido.RecorridoHolder;
 import obligatorio.ort.obligatorio.recorrido.RecorridoManager;
 
-public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback, LocationListener, View.OnClickListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener,
+        OnMapReadyCallback, LocationListener, View.OnClickListener, GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMarkerClickListener, GoogleMap.OnCameraChangeListener {
+
+    public static final int INICIAR_RECORRIDO = 1;
+    private static final int INGRESAR_PUNTO_INTERMEDIO = 2;
 
     private GoogleMap mMap;
-    private Marker mark;
-    public static final int INICIAR_RECORRIDO = 1;
-    private Button btnIniciarRecorrido;
-    private Location mLocation;
-    private FloatingActionButton fab;
     private GoogleApiClient mGoogleApiClient;
-    private RecorridoManager recorridoManager;
 
+    private Marker markInicial;
+    private Marker markActual;
+
+    private BitmapDescriptor iconMarkerInicial;
+    private BitmapDescriptor iconMarkerActual;
+    private BitmapDescriptor iconMarkerIntermedio;
+    private BitmapDescriptor iconMarkerEstacionamiento;
+    private Location mLocationInicial;
+    private Location mLocationActual;
+
+    private Button btnGuardarPuntoIntermedio;
+    private Button btnIniciarRecorrido;
+    private FloatingActionButton fab;
+
+    private float zoom = 15.0f;
+
+    private RecorridoManager recorridoManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,28 +112,43 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 getLastKnownLocation();
             }
         });
+
         btnIniciarRecorrido = (Button) findViewById(R.id.btnIniciarRecorrido);
-        btnIniciarRecorrido.setVisibility(View.VISIBLE);
         btnIniciarRecorrido.setOnClickListener(this);
+        btnGuardarPuntoIntermedio = (Button) findViewById(R.id.btnGuardarPuntoIntermedio);
+        btnGuardarPuntoIntermedio.setOnClickListener(this);
+
+        iconMarkerInicial = BitmapDescriptorFactory
+                .defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA);
+
+        iconMarkerActual = BitmapDescriptorFactory
+                .defaultMarker(BitmapDescriptorFactory.HUE_AZURE);
+
+        iconMarkerIntermedio = BitmapDescriptorFactory
+                .defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
+
+        iconMarkerEstacionamiento = BitmapDescriptorFactory.fromResource(R.drawable.ic_local_parking_black_24dp);
+
         recorridoManager = new RecorridoManager(this);
         //recorridoManager.limpiarBase();
         if (RecorridoHolder.getInstance().getRecorrido() == null) {
             Recorrido recorrido = recorridoManager.obtenerUltimoRecorrido(true);
             if(recorrido!=null){
                 RecorridoHolder.getInstance().setRecorrido(recorrido);
-                mLocation = new Location(LocationManager.GPS_PROVIDER);
-                mLocation.setLatitude(recorrido.getOrigen().getUbicacion().latitude);
-                mLocation.setLongitude(recorrido.getOrigen().getUbicacion().longitude);
                 esconderBotonIniciarRecorrido();
             }
         } else {
-            mLocation = new Location(LocationManager.GPS_PROVIDER);
-            mLocation.setLatitude(RecorridoHolder.getInstance().getRecorrido().getOrigen().getUbicacion().latitude);
-            mLocation.setLongitude(RecorridoHolder.getInstance().getRecorrido().getOrigen().getUbicacion().longitude);
             esconderBotonIniciarRecorrido();
+        }if (RecorridoHolder.getInstance().getRecorrido() == null) {
+            Recorrido recorrido = recorridoManager.obtenerUltimoRecorrido(true);
+            if(recorrido!=null){
+                inicializarPuntoOrigen(recorrido);
+            }
+        } else {
+            inicializarPuntoOrigen(RecorridoHolder.getInstance().getRecorrido());
         }
 
-        EstacionamientosServices.iniciarRecorrido("1232");
+
         EstacionamientosServices.obtenerAvisos("1232", 23);
     }
 
@@ -173,21 +209,19 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         return true;
     }
 
-    protected synchronized void buildGoogleApiClient() {
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
-    }
-
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        mMap.setOnMarkerClickListener(this);
+        mMap.setOnCameraChangeListener(this);
         getLastKnownLocation();
-        if (RecorridoHolder.getInstance().getRecorrido() != null) {
-            dibujarRecorrido();
+        if(mLocationInicial!=null){
+            markInicial = localizar(markInicial,mLocationInicial,"Inicio de recorrido",iconMarkerInicial);
         }
+        if (RecorridoHolder.getInstance().getRecorrido() != null) {
+            dibujarElementos();
+        }
+        EstacionamientosServices.pruebaEstacionamiento(mMap,iconMarkerEstacionamiento);
 
     }
 
@@ -196,8 +230,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         switch (v.getId()) {
             case R.id.btnIniciarRecorrido:
                 Intent iniciarRecorrido = new Intent(this, IniciarRecorridoActivity.class);
-                iniciarRecorrido.putExtra(getString(R.string.location),mLocation);
+                iniciarRecorrido.putExtra(getString(R.string.location),mLocationActual);
                 startActivityForResult(iniciarRecorrido, INICIAR_RECORRIDO);
+                break;
+            case R.id.btnGuardarPuntoIntermedio:
+                Intent guardarPuntoIntermedio = new Intent(this, IngresarPuntoIntermedioActivity.class);
+                guardarPuntoIntermedio.putExtra(getString(R.string.location),mLocationActual);
+                startActivityForResult(guardarPuntoIntermedio, INGRESAR_PUNTO_INTERMEDIO);
                 break;
         }
     }
@@ -208,116 +247,25 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             case INICIAR_RECORRIDO:
                 if (resultCode == RESULT_OK) {
                     if(data.getExtras()!=null || data.getExtras().size()>0){
-                        String fotoPath = data.getStringExtra(getString(R.string.foto_result));
-                        String codigoEstacionamiento = data.getStringExtra(getString(R.string.codigo_estacionamiento));
-                        Location location = data.getParcelableExtra(getString(R.string.location));
-
-                        PuntoIntermedio primerPI = new PuntoIntermedio();
-                        primerPI.setDescripcion(getString(R.string.guardar_recorrido));
-                        primerPI.setRutaDeFoto(fotoPath);
-                        primerPI.setTitulo(getString(R.string.guardar_recorrido));
-
-                        LatLng inicio = new LatLng(location.getLatitude(), location.getLongitude());
-                        primerPI.setUbicacion(inicio);
-
-                        Recorrido recorrido = new Recorrido();
-                        recorrido.setCodigoEstacionamiento(codigoEstacionamiento);
-                        recorrido.setOrigen(primerPI);
-                        recorrido.setActivo(true);
-                        recorrido.setFechaInicio(new Timestamp(System.currentTimeMillis()));
-                        recorrido.setRecorrido(new ArrayList<LatLng>());
-                        recorrido.setPuntos(new ArrayList<PuntoIntermedio>());
-
-                        recorrido = recorridoManager.AgregarRecorrido(recorrido);
-                        RecorridoHolder.getInstance().setRecorrido(recorrido);
-                        esconderBotonIniciarRecorrido();
-
+                        guardarRecorrido(data);
+                    }
+                }
+                break;
+            case INGRESAR_PUNTO_INTERMEDIO:
+                if (resultCode == RESULT_OK) {
+                    if(data.getExtras()!=null || data.getExtras().size()>0){
+                        guardarPuntoIntermedio(data);
                     }
                 }
                 break;
         }
     }
 
-    private void esconderBotonIniciarRecorrido(){
-        btnIniciarRecorrido.setVisibility(View.GONE);
-        btnIniciarRecorrido.setVisibility(View.INVISIBLE);
-
-        ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) fab.getLayoutParams();
-        params.setMargins(params.leftMargin, params.topMargin, params.rightMargin , params.rightMargin);
-        fab.setLayoutParams(params);
-    }
-
-    private void localizar() {
-        if (mLocation != null) {
-            final LatLng pos = new LatLng(mLocation.getLatitude(),
-                    mLocation.getLongitude());
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 17));
-            if (mark == null) {
-                mark = mMap
-                        .addMarker(new MarkerOptions()
-                                .position(
-                                        new LatLng(mLocation.getLatitude(),
-                                                mLocation.getLongitude()))
-                                .title("Aca")
-                                .icon(BitmapDescriptorFactory
-                                        .defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
-            } else {
-                animateMarker(mark, pos, false);
-            }
-        }
-    }
-
-    private void getLastKnownLocation() {
-        if(mLocation==null)
-            mLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-
-        LocationManager mLocationManager = (LocationManager) getApplication().getSystemService(LOCATION_SERVICE);
-        if (mLocationManager != null) {
-            if (PermissionChecker.checkCallingOrSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 3000, 10, this);
-            }
-        }
-        localizar();
-    }
-
-    public void animateMarker(final Marker marker, final LatLng toPosition,
-                              final boolean hideMarker) {
-        final Handler handler = new Handler();
-        final long start = SystemClock.uptimeMillis();
-        Projection proj = mMap.getProjection();
-        Point startPoint = proj.toScreenLocation(marker.getPosition());
-        final LatLng startLatLng = proj.fromScreenLocation(startPoint);
-        final long duration = 500;
-        final Interpolator interpolator = new LinearInterpolator();
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                long elapsed = SystemClock.uptimeMillis() - start;
-                float t = interpolator.getInterpolation((float) elapsed
-                        / duration);
-                double lng = t * toPosition.longitude + (1 - t)
-                        * startLatLng.longitude;
-                double lat = t * toPosition.latitude + (1 - t)
-                        * startLatLng.latitude;
-                marker.setPosition(new LatLng(lat, lng));
-                if (t < 1.0) {
-                    // Post again 16ms later.
-                    handler.postDelayed(this, 16);
-                } else {
-                    if (hideMarker) {
-                        marker.setVisible(false);
-                    } else {
-                        marker.setVisible(true);
-                    }
-                }
-            }
-        });
-    }
-
     @Override
     public void onLocationChanged(Location location) {
         LatLng nuevaLocation = new LatLng(location.getLatitude(), location.getLongitude());
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(nuevaLocation, 17));
+        mLocationActual = location;
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(nuevaLocation, zoom));
         if(RecorridoHolder.getInstance().getRecorrido()!=null){
 
             List<LatLng> recorrido = RecorridoHolder.getInstance().getRecorrido().getRecorrido();
@@ -333,13 +281,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             recorridoManager.actualizarRecorrido(RecorridoHolder.getInstance().getRecorrido());
         }
 
-    }
-
-    private void dibujarRecorrido(){
-        mMap.addPolyline(new PolylineOptions()
-                .addAll(RecorridoHolder.getInstance().getRecorrido().getRecorrido())
-                .width(5)
-                .color(Color.RED));
     }
 
     @Override
@@ -382,5 +323,175 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
 
+    }
+
+
+    // FUNCIONES AUXILIARES
+    private void inicializarPuntoOrigen(Recorrido recorrido) {
+        mLocationInicial = new Location(LocationManager.GPS_PROVIDER);
+        mLocationInicial.setLatitude(recorrido.getOrigen().getUbicacion().latitude);
+        mLocationInicial.setLongitude(recorrido.getOrigen().getUbicacion().longitude);
+        esconderBotonIniciarRecorrido();
+    }
+
+    private void guardarRecorrido(Intent data){
+        String fotoPath = data.getStringExtra(getString(R.string.foto_result));
+        String codigoEstacionamiento = data.getStringExtra(getString(R.string.codigo_estacionamiento));
+        Location location = data.getParcelableExtra(getString(R.string.location));
+
+        PuntoIntermedio primerPI = new PuntoIntermedio();
+        primerPI.setDescripcion(getString(R.string.guardar_recorrido));
+        primerPI.setRutaDeFoto(fotoPath);
+        primerPI.setTitulo(getString(R.string.guardar_recorrido));
+
+        LatLng inicio = new LatLng(location.getLatitude(), location.getLongitude());
+        primerPI.setUbicacion(inicio);
+
+        Recorrido recorrido = new Recorrido();
+        recorrido.setCodigoEstacionamiento(codigoEstacionamiento);
+        recorrido.setOrigen(primerPI);
+        recorrido.setActivo(true);
+        recorrido.setFechaInicio(new Timestamp(System.currentTimeMillis()));
+        recorrido.setRecorrido(new ArrayList<LatLng>());
+        recorrido.setPuntos(new ArrayList<PuntoIntermedio>());
+
+        recorrido = recorridoManager.AgregarRecorrido(recorrido);
+        RecorridoHolder.getInstance().setRecorrido(recorrido);
+        EstacionamientosServices.iniciarRecorrido(codigoEstacionamiento);
+        esconderBotonIniciarRecorrido();
+    }
+
+    private void guardarPuntoIntermedio(Intent data){
+        String fotoPath = data.getStringExtra(getString(R.string.foto_result));
+        String titulo = data.getStringExtra(getString(R.string.titulo));
+        String descripcion = data.getStringExtra(getString(R.string.descripcion));
+        Location location = data.getParcelableExtra(getString(R.string.location));
+        LatLng localizacion = new LatLng(location.getLatitude(), location.getLongitude());
+
+        PuntoIntermedio nuevoPI = new PuntoIntermedio();
+        nuevoPI.setTitulo(titulo);
+        nuevoPI.setDescripcion(descripcion);
+        nuevoPI.setRutaDeFoto(fotoPath);
+        nuevoPI.setUbicacion(localizacion);
+
+        Recorrido recorrido = RecorridoHolder.getInstance().getRecorrido();
+        recorrido.getPuntos().add(nuevoPI);
+        recorridoManager.actualizarRecorrido(recorrido);
+
+    }
+
+    private void esconderBotonIniciarRecorrido(){
+        btnIniciarRecorrido.setVisibility(View.GONE);
+        btnIniciarRecorrido.setVisibility(View.INVISIBLE);
+        btnGuardarPuntoIntermedio.setVisibility(View.VISIBLE);
+
+    }
+
+    private Marker localizar(Marker mark, Location loc,String title,BitmapDescriptor icon) {
+        if (loc != null) {
+            final LatLng pos = new LatLng(loc.getLatitude(),
+                    loc.getLongitude());
+            mark = localizar(mark,pos,title,icon);
+        }
+        return mark;
+    }
+
+    private Marker localizar(Marker mark, LatLng pos,String title,BitmapDescriptor icon) {
+        if (pos != null) {
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos,zoom));
+            if (mark == null) {
+                mark = mMap
+                        .addMarker(new MarkerOptions()
+                                .position(pos)
+                                .title(title)
+                                .icon(icon));
+            } else {
+                animateMarker(mark, pos, false);
+            }
+        }
+        return mark;
+    }
+
+    private void animateMarker(final Marker marker, final LatLng toPosition,
+                               final boolean hideMarker) {
+        final Handler handler = new Handler();
+        final long start = SystemClock.uptimeMillis();
+        Projection proj = mMap.getProjection();
+        Point startPoint = proj.toScreenLocation(marker.getPosition());
+        final LatLng startLatLng = proj.fromScreenLocation(startPoint);
+        final long duration = 500;
+        final Interpolator interpolator = new LinearInterpolator();
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                long elapsed = SystemClock.uptimeMillis() - start;
+                float t = interpolator.getInterpolation((float) elapsed
+                        / duration);
+                double lng = t * toPosition.longitude + (1 - t)
+                        * startLatLng.longitude;
+                double lat = t * toPosition.latitude + (1 - t)
+                        * startLatLng.latitude;
+                marker.setPosition(new LatLng(lat, lng));
+                if (t < 1.0) {
+                    // Post again 16ms later.
+                    handler.postDelayed(this, 16);
+                } else {
+                    if (hideMarker) {
+                        marker.setVisible(false);
+                    } else {
+                        marker.setVisible(true);
+                    }
+                }
+            }
+        });
+    }
+
+    private void getLastKnownLocation() {
+        mLocationActual = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        LocationManager mLocationManager = (LocationManager) getApplication().getSystemService(LOCATION_SERVICE);
+        if (mLocationManager != null) {
+            if (PermissionChecker.checkCallingOrSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 3000, 10, this);
+            }
+        }
+        markActual = localizar(markActual, mLocationActual, "posicionActual", iconMarkerActual);
+    }
+
+    private void dibujarElementos(){
+        Recorrido recorrido = RecorridoHolder.getInstance().getRecorrido();
+        List<Estacionamiento> estacionamientos = RecorridoHolder.getInstance().getEstacionamientos();
+        for(PuntoIntermedio pi : recorrido.getPuntos()){
+            localizar(null,pi.getUbicacion(),pi.getTitulo(),iconMarkerIntermedio);
+        }
+
+        for (Estacionamiento est : estacionamientos){
+            LatLng pos = new LatLng(est.getLatitud(),est.getLongitud());
+            localizar(null,pos,est.getNombre(),iconMarkerEstacionamiento);
+        }
+
+        mMap.addPolyline(new PolylineOptions()
+                .addAll(recorrido.getRecorrido())
+                .width(5)
+                .color(Color.RED));
+    }
+
+    protected synchronized void buildGoogleApiClient() {
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
+    }
+
+    @Override
+    public void onCameraChange(CameraPosition cameraPosition) {
+        zoom = cameraPosition.zoom;
+    }
+
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        DetalleEstacionamiento alert = new DetalleEstacionamiento();
+        alert.show(getSupportFragmentManager(),"");
+        return false;
     }
 }

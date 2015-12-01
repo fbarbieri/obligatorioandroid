@@ -11,7 +11,6 @@ public class PuntoIntermedio {
     private String rutaDeFoto;
     private String titulo;
     private String descripcion;
-    private Marker marker;
 
     public PuntoIntermedio() {
     }
@@ -48,11 +47,4 @@ public class PuntoIntermedio {
         this.descripcion = descripcion;
     }
 
-    public Marker getMarker() {
-        return marker;
-    }
-
-    public void setMarker(Marker marker) {
-        this.marker = marker;
-    }
 }

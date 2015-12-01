@@ -11,15 +11,21 @@
     <string name="title_activity_maps">Map</string>
     <string name="title_activity_maps_fragment">Map</string>
     <string name="btnRecorrido">Iniciar recorrido</string>
+    <string name="btnPuntoIntermedio">Ingresar punto interes</string>
     <string name="btnCrearRecorrido">Crear recorrido</string>
     <string name="title_activity_iniciar_recorrido">Iniciar recorrido</string>
 
+    <string name="prompt_titulo">Titulo</string>
+    <string name="prompt_descripcion">Descripción</string>
     <string name="prompt_codigo_est">Codigo de estacionamiento</string>
-    <string name="guardar_recorrido">Guardar recorrido</string>
-    <string name="error_codigo_requerido">El codigo es requerido</string>
-
+    <string name="guardar_recorrido">Inicio de recorrido</string>
+    <string name="error_titulo_requerido">El titulo es requerido</string>
+    <string name="error_descripcion_requerido">La descripción es requerida</string>
+    <string name="guardar_punto_intermedio">Guardar punto intermedio</string>
     <string name="foto_result">recorrido_foto_path</string>
     <string name="location">location</string>
     <string name="codigo_estacionamiento">codigo_est</string>
+    <string name="titulo">titulo</string>
+    <string name="descripcion">descripcion</string>
 
 </resources>

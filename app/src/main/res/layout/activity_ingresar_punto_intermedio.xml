@@ -8,7 +8,7 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="obligatorio.ort.obligatorio.IniciarRecorridoActivity">
+    tools:context="obligatorio.ort.obligatorio.IngresarPuntoIntermedioActivity">
 
     <!-- Login progress -->
     <ProgressBar
@@ -20,7 +20,7 @@
         android:visibility="gone" />
 
     <ScrollView
-        android:id="@+id/iniciar_recorrido_form"
+        android:id="@+id/guardar_punto_intermedio_form"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -35,14 +35,30 @@
                 android:layout_height="wrap_content">
 
                 <EditText
-                    android:id="@+id/codigo_estacionamiento"
+                    android:id="@+id/titulo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/prompt_codigo_est"
+                    android:hint="@string/prompt_titulo"
                     android:allowUndo="true"
                     android:inputType="text"
                     android:maxLines="1"
                     android:singleLine="true" />
+
+            </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <EditText
+                    android:id="@+id/descripcion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/prompt_descripcion"
+                    android:allowUndo="true"
+                    android:inputType="text"
+                    android:maxLines="2"
+                    android:singleLine="false" />
 
             </android.support.design.widget.TextInputLayout>
 
@@ -53,14 +69,14 @@
                 android:id="@+id/imageButton" />
 
             <Button
-                android:id="@+id/guardar_recorrido"
+                android:id="@+id/guardar_punto_intermedio"
                 style="?android:textAppearanceSmall"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="@color/common_signin_btn_dark_text_default"
                 android:background="@color/common_signin_btn_default_background"
                 android:layout_marginTop="16dp"
-                android:text="@string/guardar_recorrido"
+                android:text="@string/guardar_punto_intermedio"
                 android:textStyle="bold" />
 
         </LinearLayout>

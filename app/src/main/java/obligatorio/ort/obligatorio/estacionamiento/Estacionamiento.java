@@ -11,6 +11,9 @@ public class Estacionamiento {
     private int capacidad;
     private String horaDeApertura;
     private String horaDeCierre;
+    private double longitud;
+    private double latitud;
+    private String mailResponsable;
 
     public int getCapacidad() {
         return capacidad;
@@ -67,5 +70,29 @@ public class Estacionamiento {
 
     public void setPuntaje(double puntaje) {
         this.puntaje = puntaje;
+    }
+
+    public double getLongitud() {
+        return longitud;
+    }
+
+    public void setLongitud(double longitud) {
+        this.longitud = longitud;
+    }
+
+    public double getLatitud() {
+        return latitud;
+    }
+
+    public void setLatitud(double latitud) {
+        this.latitud = latitud;
+    }
+
+    public String getMailResponsable() {
+        return mailResponsable;
+    }
+
+    public void setMailResponsable(String mailResponsable) {
+        this.mailResponsable = mailResponsable;
     }
 }

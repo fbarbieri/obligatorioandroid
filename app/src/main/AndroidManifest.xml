@@ -46,6 +46,15 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="obligatorio.ort.obligatorio.MainActivity" />
         </activity>
+
+        <activity
+            android:name=".IngresarPuntoIntermedioActivity"
+            android:label="@string/btnPuntoIntermedio"
+            android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="obligatorio.ort.obligatorio.MainActivity" />
+        </activity>
     </application>
 
 </manifest>
