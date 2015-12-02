@@ -54,11 +54,7 @@
                     android:id="@+id/descripcion"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/prompt_descripcion"
-                    android:allowUndo="true"
-                    android:inputType="text"
-                    android:maxLines="2"
-                    android:singleLine="false" />
+                    android:hint="@string/prompt_descripcion"/>
 
             </android.support.design.widget.TextInputLayout>
 

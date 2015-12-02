@@ -81,6 +81,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private FloatingActionButton fab;
 
     private float zoom = 15.0f;
+    private boolean seguir = true;
 
     private RecorridoManager recorridoManager;
 
@@ -110,6 +111,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             @Override
             public void onClick(View view) {
                 getLastKnownLocation();
+                seguir = true;
             }
         });
 
@@ -147,7 +149,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } else {
             inicializarPuntoOrigen(RecorridoHolder.getInstance().getRecorrido());
         }
-
 
         EstacionamientosServices.obtenerAvisos("1232", 23);
     }
@@ -215,13 +216,21 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         mMap.setOnMarkerClickListener(this);
         mMap.setOnCameraChangeListener(this);
         getLastKnownLocation();
-        if(mLocationInicial!=null){
+        if(mLocationInicial!=null)
             markInicial = localizar(markInicial,mLocationInicial,"Inicio de recorrido",iconMarkerInicial);
-        }
-        if (RecorridoHolder.getInstance().getRecorrido() != null) {
+
+        if (RecorridoHolder.getInstance().getRecorrido() != null)
             dibujarElementos();
+
+        if(RecorridoHolder.getInstance().getEstacionamientos().isEmpty()){
+            EstacionamientosServices.pruebaEstacionamiento(mMap, iconMarkerEstacionamiento);
+        } else {
+            for (Estacionamiento est : RecorridoHolder.getInstance().getEstacionamientos()){
+                LatLng pos = new LatLng(est.getLatitud(),est.getLongitud());
+                localizar(null,pos,est.getNombre(),iconMarkerEstacionamiento);
+            }
         }
-        EstacionamientosServices.pruebaEstacionamiento(mMap,iconMarkerEstacionamiento);
+
 
     }
 
@@ -265,7 +274,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public void onLocationChanged(Location location) {
         LatLng nuevaLocation = new LatLng(location.getLatitude(), location.getLongitude());
         mLocationActual = location;
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(nuevaLocation, zoom));
+        if (seguir)
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(nuevaLocation, zoom));
+
         if(RecorridoHolder.getInstance().getRecorrido()!=null){
 
             List<LatLng> recorrido = RecorridoHolder.getInstance().getRecorrido().getRecorrido();
@@ -325,6 +336,25 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     }
 
+    @Override
+    public void onCameraChange(CameraPosition cameraPosition) {
+        zoom = cameraPosition.zoom;
+        seguir = false;
+    }
+
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        DetalleEstacionamiento alert = new DetalleEstacionamiento();
+        Estacionamiento estacionamiento = buscarEstacionamiento(marker.getPosition());
+        if(estacionamiento!=null){
+            alert.setDescripcion(estacionamiento.getDescripcion());
+            alert.setTitle(estacionamiento.getNombre());
+            alert.setPuntajeActual(estacionamiento.getPuntaje());
+            alert.show(getSupportFragmentManager(), "");
+        }
+        return false;
+    }
+
 
     // FUNCIONES AUXILIARES
     private void inicializarPuntoOrigen(Recorrido recorrido) {
@@ -359,6 +389,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         RecorridoHolder.getInstance().setRecorrido(recorrido);
         EstacionamientosServices.iniciarRecorrido(codigoEstacionamiento);
         esconderBotonIniciarRecorrido();
+    }
+
+    private Estacionamiento buscarEstacionamiento(LatLng pos){
+        for (Estacionamiento est :RecorridoHolder.getInstance().getEstacionamientos()){
+            LatLng posEst = new LatLng(est.getLatitud(),est.getLongitud());
+            if (posEst.equals(pos))
+                return est;
+        }
+        return null;
     }
 
     private void guardarPuntoIntermedio(Intent data){
@@ -464,11 +503,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             localizar(null,pi.getUbicacion(),pi.getTitulo(),iconMarkerIntermedio);
         }
 
-        for (Estacionamiento est : estacionamientos){
-            LatLng pos = new LatLng(est.getLatitud(),est.getLongitud());
-            localizar(null,pos,est.getNombre(),iconMarkerEstacionamiento);
-        }
-
         mMap.addPolyline(new PolylineOptions()
                 .addAll(recorrido.getRecorrido())
                 .width(5)
@@ -483,15 +517,4 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 .build();
     }
 
-    @Override
-    public void onCameraChange(CameraPosition cameraPosition) {
-        zoom = cameraPosition.zoom;
-    }
-
-    @Override
-    public boolean onMarkerClick(Marker marker) {
-        DetalleEstacionamiento alert = new DetalleEstacionamiento();
-        alert.show(getSupportFragmentManager(),"");
-        return false;
-    }
 }

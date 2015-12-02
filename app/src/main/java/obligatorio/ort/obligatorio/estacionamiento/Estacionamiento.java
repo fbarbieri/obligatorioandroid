@@ -5,6 +5,7 @@ import java.util.List;
 public class Estacionamiento {
 
     private String nombre;
+    private String descripcion;
     private List<Calificacion> calificaciones;
     private List<Parcela> parcelas;
     private double puntaje = -1;
@@ -94,5 +95,13 @@ public class Estacionamiento {
 
     public void setMailResponsable(String mailResponsable) {
         this.mailResponsable = mailResponsable;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
     }
 }
