@@ -9,32 +9,60 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.RatingBar;
 import android.widget.TextView;
 
 public class DetalleEstacionamiento extends DialogFragment {
 
-    private String title;
-    private String descripcion;
-    private double puntajeActual;
+    private String title = "Estacionamiento";
+    private String descripcion = "Descripcion del estacionamiento";
+    private double puntajeActual = 0.0d;
+    private TextView desc;
+    private EditText mComentarioView;
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    static DetalleEstacionamiento newInstance(String title, String descripcion, double puntajeActual) {
+        DetalleEstacionamiento f = new DetalleEstacionamiento();
 
-        // R.layout.my_layout - that's the layout where your textview is placed
-        View view = inflater.inflate(R.layout.detalle_estacionamiento, container, false);
-        TextView titulo = (TextView) view.findViewById(R.id.nombreEstacionamiento);
-        TextView desc = (TextView) view.findViewById(R.id.descripcionEstacionamiento);
-        titulo.setText(title);
-        desc.setText(descripcion);
-        return view;
+        // Supply num input as an argument.
+        Bundle args = new Bundle();
+        args.putString("descripcion", descripcion);
+        args.putString("title", title);
+        args.putDouble("puntaje", puntajeActual);
+        f.setArguments(args);
+
+        return f;
     }
+
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        LayoutInflater inflater = getActivity().getLayoutInflater();
-        builder.setView(inflater.inflate(R.layout.detalle_estacionamiento, null))
+        View view = getActivity().getLayoutInflater().inflate(R.layout.detalle_estacionamiento, null);
+        TextView titulo = (TextView) view.findViewById(R.id.nombreEstacionamiento);
+        desc = (TextView) view.findViewById(R.id.descripcionEstacionamiento);
+        mComentarioView = (EditText) view.findViewById(R.id.comentario);
+        title = getArguments().getString("title");
+        if (getArguments().getString("descripcion") != null) {
+            descripcion = getArguments().getString("descripcion");
+        }
+
+        RatingBar puntaje = (RatingBar) view.findViewById(R.id.ratingBar);
+        puntaje.setOnRatingBarChangeListener(new RatingBar.OnRatingBarChangeListener() {
+            @Override
+            public void onRatingChanged(RatingBar ratingBar, float rating, boolean fromUser) {
+                if(fromUser) {
+                    puntajeActual = rating;
+                    mComentarioView.setVisibility(View.VISIBLE);
+                    desc.setVisibility(View.GONE);
+                }
+            }
+        });
+        puntajeActual = getArguments().getDouble("puntaje");
+        puntaje.setRating((float)puntajeActual);
+        titulo.setText(title);
+        desc.setText(descripcion);
+
+        builder.setView(view)
                 // Add action buttons
                 .setPositiveButton(R.string.accept, new DialogInterface.OnClickListener() {
                     @Override
@@ -42,20 +70,7 @@ public class DetalleEstacionamiento extends DialogFragment {
                         // sign in the user ...
                     }
                 });
-
-
         return builder.create();
     }
 
-    public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public void setPuntajeActual(double puntajeActual) {
-        this.puntajeActual = puntajeActual;
-    }
 }

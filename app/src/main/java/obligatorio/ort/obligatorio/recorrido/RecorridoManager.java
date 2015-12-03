@@ -18,7 +18,7 @@ public class RecorridoManager {
 
     private BaseDatos recorridoBD;
     private SQLiteDatabase db;
-    private static String[] FROM = {_ID,RECORRIDO_EXTRA_DATA,RECORRIDO_ACTIVO,RECORRIDO_EST_COD,RECORRIDO_FECHA_INICIO,RECORRIDO_FECHA_FIN};
+    private static String[] SELECT = {_ID,RECORRIDO_EXTRA_DATA,RECORRIDO_ACTIVO,RECORRIDO_EST_COD,RECORRIDO_FECHA_INICIO,RECORRIDO_FECHA_FIN};
     private static String ORDER_BY = RECORRIDO_FECHA_INICIO + " DESC";
 
     public RecorridoManager (Context context){
@@ -45,7 +45,7 @@ public class RecorridoManager {
         Recorrido recorrido = null;
         int flag = (activo)? 1 : 0;
         String[] args = {flag+""};
-        Cursor cursor = db.query(RECORRIDO_TABLA, FROM, "activo = ?", args, null, null, ORDER_BY);
+        Cursor cursor = db.query(RECORRIDO_TABLA, SELECT, "activo = ?", args, null, null, ORDER_BY);
         if(cursor.moveToNext()){
             recorrido = new Gson().fromJson(cursor.getString(1),Recorrido.class);
             recorrido.setId(cursor.getLong(0));

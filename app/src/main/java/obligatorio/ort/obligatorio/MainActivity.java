@@ -1,8 +1,6 @@
 package obligatorio.ort.obligatorio;
 
 import android.Manifest;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -14,6 +12,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.PermissionChecker;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -24,7 +25,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.ViewGroup;
 import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.Button;
@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private Button btnIniciarRecorrido;
     private FloatingActionButton fab;
 
-    private float zoom = 15.0f;
+    private float zoom = 20.0f;
     private boolean seguir = true;
 
     private RecorridoManager recorridoManager;
@@ -150,7 +150,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             inicializarPuntoOrigen(RecorridoHolder.getInstance().getRecorrido());
         }
 
-        EstacionamientosServices.obtenerAvisos("1232", 23);
     }
 
     @Override
@@ -223,15 +222,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             dibujarElementos();
 
         if(RecorridoHolder.getInstance().getEstacionamientos().isEmpty()){
-            EstacionamientosServices.pruebaEstacionamiento(mMap, iconMarkerEstacionamiento);
+            EstacionamientosServices.obtenerEstacionamiento(mMap, iconMarkerEstacionamiento);
         } else {
             for (Estacionamiento est : RecorridoHolder.getInstance().getEstacionamientos()){
                 LatLng pos = new LatLng(est.getLatitud(),est.getLongitud());
                 localizar(null,pos,est.getNombre(),iconMarkerEstacionamiento);
             }
         }
-
-
     }
 
     @Override
@@ -344,13 +341,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     public boolean onMarkerClick(Marker marker) {
-        DetalleEstacionamiento alert = new DetalleEstacionamiento();
+
         Estacionamiento estacionamiento = buscarEstacionamiento(marker.getPosition());
         if(estacionamiento!=null){
-            alert.setDescripcion(estacionamiento.getDescripcion());
-            alert.setTitle(estacionamiento.getNombre());
-            alert.setPuntajeActual(estacionamiento.getPuntaje());
-            alert.show(getSupportFragmentManager(), "");
+            FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+            Fragment prev = getSupportFragmentManager().findFragmentByTag("DetalleEstacionamiento");
+            if (prev != null) {
+                ft.remove(prev);
+            }
+            ft.addToBackStack(null);
+            DialogFragment dialogFragment = DetalleEstacionamiento.newInstance(estacionamiento.getNombre(),
+                    estacionamiento.getDescripcion(),estacionamiento.getPuntaje());
+            dialogFragment.show(ft, "DetalleEstacionamiento");
         }
         return false;
     }
@@ -362,6 +364,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         mLocationInicial.setLatitude(recorrido.getOrigen().getUbicacion().latitude);
         mLocationInicial.setLongitude(recorrido.getOrigen().getUbicacion().longitude);
         esconderBotonIniciarRecorrido();
+        EstacionamientosServices.obtenerNotificaciones(recorrido.getCodigoEstacionamiento());
     }
 
     private void guardarRecorrido(Intent data){

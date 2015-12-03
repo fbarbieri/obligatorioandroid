@@ -63,7 +63,7 @@ public class EstacionamientosServices {
         });
     }
 
-    public static void obtenerAvisos(String codigo, Integer minutos){
+    public static void enviarAvisos(String codigo, Integer minutos){
         RequestParams params = new RequestParams();
         params.put("codigo",codigo);
         params.put("minutos",minutos);
@@ -100,27 +100,73 @@ public class EstacionamientosServices {
         });
     }
 
-    public static void pruebaEstacionamiento(final GoogleMap googleMap, final BitmapDescriptor icon){
+    public static void calificar(String idEstacionamiento, String puntaje,
+                                 String comentario,String usuario){
         RequestParams params = new RequestParams();
-        client.get("http://appenlanube-barbieri-gamboa.appspot.com/servicios/estacionamientos", new JsonHttpResponseHandler() {
+        params.put("idEstacionamiento",idEstacionamiento);
+        params.put("puntaje",puntaje);
+        params.put("comentario",comentario);
+        params.put("usuario",usuario);
+        client.post("http://appenlanube-barbieri-gamboa.appspot.com/servicios/calificar", params, new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                Estacionamiento est = new Gson().fromJson(response.toString(), Estacionamiento.class);
-                RecorridoHolder.getInstance().getEstacionamientos().add(est);
-                System.out.println("Prueba response");
+                System.out.println("calificar response");
                 System.out.println("statusCode: " + statusCode);
                 System.out.println("response: " + response);
             }
 
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
-                for(int i=0; i < response.length() ; i++) {
+                System.out.println("calificar response");
+                System.out.println("statusCode: " + statusCode);
+                System.out.println("response: " + response);
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
+                super.onFailure(statusCode, headers, responseString, throwable);
+                System.out.println("calificar error response");
+                System.out.println("Error Code: " + statusCode);
+                System.out.println("Error Desc: " + responseString);
+
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
+                super.onFailure(statusCode, headers, throwable, errorResponse);
+                System.out.println("calificar error response");
+                System.out.println("Error Code: " + statusCode);
+                System.out.println("Error Desc: " + errorResponse);
+
+            }
+        });
+
+    }
+
+    public static void obtenerEstacionamiento(final GoogleMap googleMap, final BitmapDescriptor icon){
+        RequestParams params = new RequestParams();
+        client.get("http://appenlanube-barbieri-gamboa.appspot.com/servicios/estacionamientos", new JsonHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                System.out.println("Obtener estacionamientos response");
+                System.out.println("statusCode: " + statusCode);
+                System.out.println("response: " + response);
+                Estacionamiento est = new Gson().fromJson(response.toString(), Estacionamiento.class);
+                RecorridoHolder.getInstance().getEstacionamientos().add(est);
+            }
+
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
+                System.out.println("Obtener estacionamientos response");
+                System.out.println("statusCode: " + statusCode);
+                System.out.println("response: " + response);
+                for (int i = 0; i < response.length(); i++) {
                     JSONObject json_data = null;
                     try {
                         json_data = response.getJSONObject(i);
 
                         Estacionamiento est = new Gson().fromJson(json_data.toString(), Estacionamiento.class);
-                        LatLng pos = new LatLng(est.getLatitud(),est.getLongitud());
+                        LatLng pos = new LatLng(est.getLatitud(), est.getLongitud());
                         googleMap.addMarker(new MarkerOptions()
                                 .position(pos)
                                 .title(est.getNombre())
@@ -130,16 +176,12 @@ public class EstacionamientosServices {
                         e.printStackTrace();
                     }
                 }
-
-                System.out.println("Prueba response");
-                System.out.println("statusCode: " + statusCode);
-                System.out.println("response: " + response);
             }
 
             @Override
             public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
                 super.onFailure(statusCode, headers, responseString, throwable);
-                System.out.println("Prueba error response");
+                System.out.println("Obtener estacionamientos error response");
                 System.out.println("Error Code: " + statusCode);
                 System.out.println("Error Desc: " + responseString);
             }
@@ -147,12 +189,57 @@ public class EstacionamientosServices {
             @Override
             public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
                 super.onFailure(statusCode, headers, throwable, errorResponse);
-                System.out.println("Prueba error response");
+                System.out.println("Obtener estacionamientos error response");
                 System.out.println("Error Code: " + statusCode);
                 System.out.println("Error Desc: " + errorResponse);
             }
         });
 
     }
+
+    public static void obtenerNotificaciones(String clave){
+        RequestParams params = new RequestParams();
+        params.put("clave",clave);
+        client.get("http://appenlanube-barbieri-gamboa.appspot.com/servicios/notificaciones", params, new JsonHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                System.out.println("Obtener notificaciones response");
+                System.out.println("statusCode: " + statusCode);
+                System.out.println("response: " + response);
+
+                Estacionamiento est = new Gson().fromJson(response.toString(), Estacionamiento.class);
+                RecorridoHolder.getInstance().getEstacionamientos().add(est);
+
+            }
+
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
+                System.out.println("Obtener notificaciones response");
+                System.out.println("statusCode: " + statusCode);
+                System.out.println("response: " + response);
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
+                super.onFailure(statusCode, headers, responseString, throwable);
+                System.out.println("Obtener notificaciones error response");
+                System.out.println("Error Code: " + statusCode);
+                System.out.println("Error Desc: " + responseString);
+
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
+                super.onFailure(statusCode, headers, throwable, errorResponse);
+                System.out.println("Obtener notificaciones error response");
+                System.out.println("Error Code: " + statusCode);
+                System.out.println("Error Desc: " + errorResponse);
+
+            }
+        });
+
+    }
+
+
 
 }

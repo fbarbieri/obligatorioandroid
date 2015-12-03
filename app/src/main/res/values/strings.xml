@@ -27,5 +27,6 @@
     <string name="codigo_estacionamiento">codigo_est</string>
     <string name="titulo">titulo</string>
     <string name="descripcion">descripcion</string>
+    <string name="prompt_comentario">Ingrese su comentario</string>
 
 </resources>
