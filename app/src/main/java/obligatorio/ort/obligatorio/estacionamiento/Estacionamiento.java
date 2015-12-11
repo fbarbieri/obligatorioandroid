@@ -15,6 +15,7 @@ public class Estacionamiento {
     private double longitud;
     private double latitud;
     private String mailResponsable;
+    private List<Tarifa> tarifas;
 
     public int getCapacidad() {
         return capacidad;
@@ -103,5 +104,13 @@ public class Estacionamiento {
 
     public void setDescripcion(String descripcion) {
         this.descripcion = descripcion;
+    }
+
+    public List<Tarifa> getTarifas() {
+        return tarifas;
+    }
+
+    public void setTarifas(List<Tarifa> tarifas) {
+        this.tarifas = tarifas;
     }
 }

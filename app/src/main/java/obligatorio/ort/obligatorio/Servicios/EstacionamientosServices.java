@@ -30,7 +30,7 @@ public class EstacionamientosServices {
     public static void iniciarRecorrido(String codigo){
         RequestParams params = new RequestParams();
         params.put("codigo",codigo);
-        client.post("http://appenlanube-barbieri-gamboa.appspot.com/servicios/inicio",params, new JsonHttpResponseHandler() {
+        client.post("http://barbieri-gamboa-movil.appspot.com/servicios/inicio",params, new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 System.out.println("inicio response");
@@ -67,7 +67,7 @@ public class EstacionamientosServices {
         RequestParams params = new RequestParams();
         params.put("codigo",codigo);
         params.put("minutos",minutos);
-        client.post("http://appenlanube-barbieri-gamboa.appspot.com/servicios/aviso",params, new JsonHttpResponseHandler() {
+        client.post("http://barbieri-gamboa-movil.appspot.com/servicios/aviso",params, new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 System.out.println("aviso response");
@@ -107,7 +107,7 @@ public class EstacionamientosServices {
         params.put("puntaje",puntaje);
         params.put("comentario",comentario);
         params.put("usuario",usuario);
-        client.post("http://appenlanube-barbieri-gamboa.appspot.com/servicios/calificar", params, new JsonHttpResponseHandler() {
+        client.post("http://barbieri-gamboa-movil.appspot.com/servicios/calificar", params, new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 System.out.println("calificar response");
@@ -145,7 +145,7 @@ public class EstacionamientosServices {
 
     public static void obtenerEstacionamiento(final GoogleMap googleMap, final BitmapDescriptor icon){
         RequestParams params = new RequestParams();
-        client.get("http://appenlanube-barbieri-gamboa.appspot.com/servicios/estacionamientos", new JsonHttpResponseHandler() {
+        client.get("http://barbieri-gamboa-movil.appspot.com/servicios/estacionamientos", new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 System.out.println("Obtener estacionamientos response");
@@ -200,7 +200,7 @@ public class EstacionamientosServices {
     public static void obtenerNotificaciones(String clave){
         RequestParams params = new RequestParams();
         params.put("clave",clave);
-        client.get("http://appenlanube-barbieri-gamboa.appspot.com/servicios/notificaciones", params, new JsonHttpResponseHandler() {
+        client.get("http://barbieri-gamboa-movil.appspot.com/servicios/notificaciones", params, new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 System.out.println("Obtener notificaciones response");
