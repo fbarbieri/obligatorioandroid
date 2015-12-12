@@ -16,6 +16,7 @@ import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.PermissionChecker;
+import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -29,6 +30,15 @@ import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.Button;
 
+import com.facebook.AccessToken;
+import com.facebook.CallbackManager;
+import com.facebook.FacebookCallback;
+import com.facebook.FacebookException;
+import com.facebook.FacebookSdk;
+import com.facebook.GraphRequest;
+import com.facebook.GraphResponse;
+import com.facebook.login.LoginManager;
+import com.facebook.login.LoginResult;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
@@ -45,12 +55,15 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+import org.json.JSONObject;
+
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
 import obligatorio.ort.obligatorio.Servicios.EstacionamientosServices;
 import obligatorio.ort.obligatorio.estacionamiento.Estacionamiento;
+import obligatorio.ort.obligatorio.facebook.User;
 import obligatorio.ort.obligatorio.recorrido.PuntoIntermedio;
 import obligatorio.ort.obligatorio.recorrido.Recorrido;
 import obligatorio.ort.obligatorio.recorrido.RecorridoHolder;
@@ -80,15 +93,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private Button btnIniciarRecorrido;
     private FloatingActionButton fab;
 
-    private float zoom = 20.0f;
+    private float zoom = 15.0f;
     private boolean seguir = true;
 
     private RecorridoManager recorridoManager;
 
+    private static CallbackManager callbackManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
+        FacebookSdk.sdkInitialize(getApplicationContext());
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -138,17 +153,34 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             if(recorrido!=null){
                 RecorridoHolder.getInstance().setRecorrido(recorrido);
                 esconderBotonIniciarRecorrido();
+                inicializarRecorrido(recorrido);
             }
         } else {
             esconderBotonIniciarRecorrido();
-        }if (RecorridoHolder.getInstance().getRecorrido() == null) {
-            Recorrido recorrido = recorridoManager.obtenerUltimoRecorrido(true);
-            if(recorrido!=null){
-                inicializarPuntoOrigen(recorrido);
-            }
-        } else {
-            inicializarPuntoOrigen(RecorridoHolder.getInstance().getRecorrido());
+            inicializarRecorrido(RecorridoHolder.getInstance().getRecorrido());
         }
+
+        callbackManager = CallbackManager.Factory.create();
+        LoginManager.getInstance().registerCallback(callbackManager,
+                new FacebookCallback<LoginResult>() {
+                    @Override
+                    public void onSuccess(LoginResult loginResult) {
+                        // login successful
+                        AccessToken accessToken = AccessToken.getCurrentAccessToken();
+                        Log.i("DetalleEstacionamiento", "Facebook success callback " + accessToken.getToken());
+                        checkFacebookSession();
+                    }
+
+                    @Override
+                    public void onCancel() {
+                        Log.i("DetalleEstacionamiento", "Facebook cancel callback ");
+                    }
+
+                    @Override
+                    public void onError(FacebookException exception) {
+                        Log.i("DetalleEstacionamiento", "Facebook Error callback ");
+                    }
+                });
 
     }
 
@@ -249,6 +281,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        callbackManager.onActivityResult(requestCode,resultCode, data);
         switch (requestCode) {
             case INICIAR_RECORRIDO:
                 if (resultCode == RESULT_OK) {
@@ -359,12 +392,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
 
     // FUNCIONES AUXILIARES
-    private void inicializarPuntoOrigen(Recorrido recorrido) {
+    private void inicializarRecorrido(Recorrido recorrido) {
         mLocationInicial = new Location(LocationManager.GPS_PROVIDER);
         mLocationInicial.setLatitude(recorrido.getOrigen().getUbicacion().latitude);
         mLocationInicial.setLongitude(recorrido.getOrigen().getUbicacion().longitude);
         esconderBotonIniciarRecorrido();
-        EstacionamientosServices.obtenerNotificaciones(recorrido.getCodigoEstacionamiento());
+        if(recorrido.getCodigoEstacionamiento()!=null)
+            EstacionamientosServices.obtenerNotificaciones(recorrido.getCodigoEstacionamiento());
     }
 
     private void guardarRecorrido(Intent data){
@@ -518,6 +552,27 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
+    }
+
+    protected void checkFacebookSession() {
+        AccessToken accessToken = AccessToken.getCurrentAccessToken();
+        if (accessToken != null && !accessToken.isExpired()) {
+            GraphRequest request = GraphRequest.newMeRequest(accessToken, new GraphRequest.GraphJSONObjectCallback() {
+                @Override
+                public void onCompleted(JSONObject userJson, GraphResponse graphResponse) {
+                    User.facebookUser(userJson);
+                }
+            });
+            Bundle parameters = new Bundle();
+            parameters.putString("fields", "id,name,link,gender,birthday,email");
+            request.setParameters(parameters);
+            request.executeAsync();
+        } else {
+            List<String> permissions = new ArrayList<String>();
+            permissions.add("public_profile");
+            permissions.add("email");
+            LoginManager.getInstance().logInWithReadPermissions(this, permissions);
+        }
     }
 
 }

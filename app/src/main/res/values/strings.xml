@@ -28,5 +28,7 @@
     <string name="titulo">titulo</string>
     <string name="descripcion">descripcion</string>
     <string name="prompt_comentario">Ingrese su comentario</string>
+    <string name="facebook_app_id">102092943497466</string>
+    <string name="ver_comentarios">Ver comentarios</string>
 
 </resources>
