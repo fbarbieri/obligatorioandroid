@@ -101,7 +101,7 @@ public class IngresarPuntoIntermedioActivity extends AppCompatActivity{
         mTituloView.setError(null);
         mDescripcionView.setError(null);
         String titulo = mTituloView.getText().toString();
-        String descripcion = mTituloView.getText().toString();
+        String descripcion = mDescripcionView.getText().toString();
         boolean cancel = false;
         View focusView = null;
 
@@ -173,7 +173,7 @@ public class IngresarPuntoIntermedioActivity extends AppCompatActivity{
                     restorePreferences();
                     if (mCurrentPhotoPath != null) {
                         setPic();
-                        mCurrentPhotoPath = null;
+//                        mCurrentPhotoPath = null;
                     }
                 }
                 break;

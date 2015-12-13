@@ -15,6 +15,13 @@ public class PuntoIntermedio {
     public PuntoIntermedio() {
     }
 
+    public PuntoIntermedio(LatLng ubicacion, String rutaDeFoto, String titulo, String descripcion) {
+        this.ubicacion = ubicacion;
+        this.rutaDeFoto = rutaDeFoto;
+        this.titulo = titulo;
+        this.descripcion = descripcion;
+    }
+
     public String getRutaDeFoto() {
         return rutaDeFoto;
     }

@@ -9,6 +9,7 @@
     <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.CAMERA" />
+
     <uses-feature android:name="android.hardware.camera" />
 
     <application
@@ -42,7 +43,6 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="obligatorio.ort.obligatorio.MainActivity" />
         </activity>
-
         <activity
             android:name=".IngresarPuntoIntermedioActivity"
             android:label="@string/btnPuntoIntermedio"
@@ -50,6 +50,24 @@
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="obligatorio.ort.obligatorio.MainActivity" />
+        </activity>
+        <activity
+            android:name=".PuntoIntermedioListActivity"
+            android:label="@string/title_puntointermedio_list"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="obligatorio.ort.obligatorio.MainActivity" />
+        </activity>
+        <activity
+            android:name=".PuntoIntermedioDetailActivity"
+            android:label="@string/title_puntointermedio_detail"
+            android:parentActivityName=".PuntoIntermedioListActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="obligatorio.ort.obligatorio.PuntoIntermedioListActivity" />
         </activity>
     </application>
 
