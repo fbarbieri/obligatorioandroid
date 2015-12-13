@@ -100,7 +100,7 @@ public class EstacionamientosServices {
         });
     }
 
-    public static void calificar(String idEstacionamiento, String puntaje,
+    public static void calificar(String idEstacionamiento, Double puntaje,
                                  String comentario,String usuario){
         RequestParams params = new RequestParams();
         params.put("idEstacionamiento",idEstacionamiento);

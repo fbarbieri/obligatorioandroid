@@ -26,13 +26,53 @@
         android:textColor="#000000"
         android:background="#ffffff"/>
 
+    <TableLayout
+        android:id="@+id/horarios"
+        android:layout_width="230dp"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+        <TableRow>
+            <TextView
+                android:layout_column="0"
+                android:text="Vehiculo"
+                android:padding="3dip" />
+            <TextView
+                android:text="Hora"
+                android:layout_column="1"
+                android:gravity="start"
+                android:layout_marginLeft="12dip"
+                android:padding="3dip" />
+            <TextView
+                android:text="Dia"
+                android:layout_column="2"
+                android:gravity="start"
+                android:layout_marginLeft="12dip"
+                android:padding="3dip" />
+        </TableRow>
+        <View
+            android:layout_height="2dip"
+            android:background="#FF909090"
+            android:layout_width="4dp"/>
+
+    </TableLayout>
+
     <RatingBar
-        android:layout_width="wrap_content"
+        android:layout_width="210dp"
         android:layout_height="wrap_content"
         android:id="@+id/ratingBar"
-        android:layout_gravity="center"
-        android:layout_centerHorizontal="true"/>
+        android:isIndicator="false"
+        android:padding="16dp"
+        style="?android:attr/ratingBarStyleIndicator" />
 
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:id="@+id/comentarios"
+        android:text="@string/ver_comentarios"
+        android:textColor="@color/colorPrimaryDark"
+        android:background="?android:attr/selectableItemBackground"
+        android:layout_centerVertical="true"/>
 
     <android.support.design.widget.TextInputLayout
         android:layout_width="match_parent"
