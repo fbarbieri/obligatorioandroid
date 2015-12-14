@@ -1,10 +1,13 @@
 package obligatorio.ort.obligatorio;
 
 import android.Manifest;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -15,7 +18,9 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.PermissionChecker;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -26,6 +31,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.ViewGroup;
 import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.Button;
@@ -90,12 +96,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private Location mLocationInicial;
     private Location mLocationActual;
 
-    private Button btnGuardarPuntoIntermedio;
     private Button btnIniciarRecorrido;
-    private FloatingActionButton fab;
+    private FloatingActionButton fabLocalizar;
+    private FloatingActionButton fabGuardarPuntoIntermedio;
+    private FloatingActionButton fabTerminarRecorrido;
 
     private float zoom = 15.0f;
     private boolean seguir = true;
+    private boolean ubicarDesdeFabLocalizar = false;
 
     private RecorridoManager recorridoManager;
 
@@ -122,19 +130,26 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        fabLocalizar = (FloatingActionButton) findViewById(R.id.fabLocalizar);
+        fabLocalizar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 getLastKnownLocation();
                 seguir = true;
+                ubicarDesdeFabLocalizar = true;
+                Drawable fixedGps = ContextCompat.getDrawable(getApplicationContext(), R.mipmap.ic_gps_fixed_black_24dp);
+                fabLocalizar.setImageDrawable(fixedGps);
             }
         });
 
+        fabGuardarPuntoIntermedio = (FloatingActionButton) findViewById(R.id.fabGuardarPuntoIntermedio);
+        fabGuardarPuntoIntermedio.setOnClickListener(this);
+
+        fabTerminarRecorrido = (FloatingActionButton) findViewById(R.id.fabTerminarRecorrido);
+        fabTerminarRecorrido.setOnClickListener(this);
+
         btnIniciarRecorrido = (Button) findViewById(R.id.btnIniciarRecorrido);
         btnIniciarRecorrido.setOnClickListener(this);
-        btnGuardarPuntoIntermedio = (Button) findViewById(R.id.btnGuardarPuntoIntermedio);
-        btnGuardarPuntoIntermedio.setOnClickListener(this);
 
         iconMarkerInicial = BitmapDescriptorFactory
                 .defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA);
@@ -145,7 +160,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         iconMarkerIntermedio = BitmapDescriptorFactory
                 .defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
 
-        iconMarkerEstacionamiento = BitmapDescriptorFactory.fromResource(R.drawable.ic_local_parking_black_24dp);
+        iconMarkerEstacionamiento = BitmapDescriptorFactory.fromResource(R.mipmap.ic_explicit_black_24dp);
 
         recorridoManager = new RecorridoManager(this);
         //recorridoManager.limpiarBase();
@@ -272,10 +287,30 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 iniciarRecorrido.putExtra(getString(R.string.location),mLocationActual);
                 startActivityForResult(iniciarRecorrido, INICIAR_RECORRIDO);
                 break;
-            case R.id.btnGuardarPuntoIntermedio:
+            case R.id.fabGuardarPuntoIntermedio:
                 Intent guardarPuntoIntermedio = new Intent(this, IngresarPuntoIntermedioActivity.class);
                 guardarPuntoIntermedio.putExtra(getString(R.string.location),mLocationActual);
                 startActivityForResult(guardarPuntoIntermedio, INGRESAR_PUNTO_INTERMEDIO);
+                break;
+            case R.id.fabTerminarRecorrido:
+
+                AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
+                alertDialog.setTitle("Finalizar Recorrido");
+                alertDialog.setMessage("Estas seguro que desa finalizar el recorrido");
+                alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "ACPETAR",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                terminarRecorrido();
+                                dialog.dismiss();
+                            }
+                        });
+                alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "CANCELAR",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                            }
+                        });
+                alertDialog.show();
                 break;
         }
     }
@@ -369,8 +404,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     public void onCameraChange(CameraPosition cameraPosition) {
-        zoom = cameraPosition.zoom;
-        seguir = false;
+        if(!ubicarDesdeFabLocalizar){
+            zoom = cameraPosition.zoom;
+            Drawable fixedGps = ContextCompat.getDrawable(getApplicationContext(), R.mipmap.ic_gps_not_fixed_black_24dp);
+            fabLocalizar.setImageDrawable(fixedGps);
+            seguir = false;
+        } else {
+            ubicarDesdeFabLocalizar=false;
+        }
     }
 
     @Override
@@ -429,6 +470,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         esconderBotonIniciarRecorrido();
     }
 
+    private void terminarRecorrido(){
+        Recorrido recorrido = RecorridoHolder.getInstance().getRecorrido();
+        recorrido.setActivo(false);
+        recorrido.setFechaFin(new Timestamp(System.currentTimeMillis()));
+        recorridoManager.actualizarRecorrido(recorrido);
+        RecorridoHolder.getInstance().setRecorrido(null);
+        mostrarBotonIniciarRecorrido();
+        Intent intent = getIntent();
+        finish();
+        startActivity(intent);
+    }
+
     private Estacionamiento buscarEstacionamiento(LatLng pos){
         for (Estacionamiento est :RecorridoHolder.getInstance().getEstacionamientos()){
             LatLng posEst = new LatLng(est.getLatitud(),est.getLongitud());
@@ -460,8 +513,20 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private void esconderBotonIniciarRecorrido(){
         btnIniciarRecorrido.setVisibility(View.GONE);
         btnIniciarRecorrido.setVisibility(View.INVISIBLE);
-        btnGuardarPuntoIntermedio.setVisibility(View.VISIBLE);
+        ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) fabLocalizar.getLayoutParams();
+        params.setMargins(params.leftMargin, params.topMargin, params.rightMargin, params.rightMargin);
+        fabLocalizar.setLayoutParams(params);
+        fabGuardarPuntoIntermedio.setVisibility(View.VISIBLE);
+        fabTerminarRecorrido.setVisibility(View.VISIBLE);
+    }
 
+    private void mostrarBotonIniciarRecorrido(){
+        btnIniciarRecorrido.setVisibility(View.VISIBLE);
+        ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) fabLocalizar.getLayoutParams();
+        params.setMargins(params.leftMargin, params.topMargin, params.rightMargin, 231);
+        fabLocalizar.setLayoutParams(params);
+        fabGuardarPuntoIntermedio.setVisibility(View.GONE);
+        fabTerminarRecorrido.setVisibility(View.GONE);
     }
 
     private Marker localizar(Marker mark, Location loc,String title,BitmapDescriptor icon) {
@@ -536,15 +601,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private void dibujarElementos(){
         Recorrido recorrido = RecorridoHolder.getInstance().getRecorrido();
-        List<Estacionamiento> estacionamientos = RecorridoHolder.getInstance().getEstacionamientos();
-        for(PuntoIntermedio pi : recorrido.getPuntos()){
-            localizar(null,pi.getUbicacion(),pi.getTitulo(),iconMarkerIntermedio);
+        if(recorrido != null) {
+            for (PuntoIntermedio pi : recorrido.getPuntos()) {
+                localizar(null, pi.getUbicacion(), pi.getTitulo(), iconMarkerIntermedio);
+            }
+            mMap.addPolyline(new PolylineOptions()
+                    .addAll(recorrido.getRecorrido())
+                    .width(5)
+                    .color(Color.RED));
         }
-
-        mMap.addPolyline(new PolylineOptions()
-                .addAll(recorrido.getRecorrido())
-                .width(5)
-                .color(Color.RED));
     }
 
     protected synchronized void buildGoogleApiClient() {
