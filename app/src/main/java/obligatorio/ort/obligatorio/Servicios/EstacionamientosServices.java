@@ -1,5 +1,7 @@
 package obligatorio.ort.obligatorio.Servicios;
 
+import android.content.Context;
+
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.LatLng;
@@ -17,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cz.msebera.android.httpclient.Header;
+import obligatorio.ort.obligatorio.NewMessageNotification;
 import obligatorio.ort.obligatorio.estacionamiento.Estacionamiento;
 import obligatorio.ort.obligatorio.recorrido.RecorridoHolder;
 
@@ -197,18 +200,15 @@ public class EstacionamientosServices {
 
     }
 
-    public static void obtenerNotificaciones(String clave){
-        RequestParams params = new RequestParams();
-        params.put("clave",clave);
-        client.get("http://barbieri-gamboa-movil.appspot.com/servicios/notificaciones", params, new JsonHttpResponseHandler() {
+    public static void obtenerNotificaciones(String clave,final Context context){
+        client.get("http://barbieri-gamboa-movil.appspot.com/servicios/notificaciones/"+clave, new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 System.out.println("Obtener notificaciones response");
                 System.out.println("statusCode: " + statusCode);
                 System.out.println("response: " + response);
 
-                Estacionamiento est = new Gson().fromJson(response.toString(), Estacionamiento.class);
-                RecorridoHolder.getInstance().getEstacionamientos().add(est);
+
 
             }
 
@@ -217,6 +217,13 @@ public class EstacionamientosServices {
                 System.out.println("Obtener notificaciones response");
                 System.out.println("statusCode: " + statusCode);
                 System.out.println("response: " + response);
+                for (int i = 0; i < response.length(); i++) {
+                    try {
+                        NewMessageNotification.notify(context, response.getString(i), i+1);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
 
             @Override

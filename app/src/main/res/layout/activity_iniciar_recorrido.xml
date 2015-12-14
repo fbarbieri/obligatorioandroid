@@ -57,8 +57,8 @@
                 style="?android:textAppearanceSmall"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/common_signin_btn_dark_text_default"
-                android:background="@color/common_signin_btn_default_background"
+                android:textColor="#ffffff"
+                android:background="#648046"
                 android:layout_marginTop="16dp"
                 android:text="@string/guardar_recorrido"
                 android:textStyle="bold" />

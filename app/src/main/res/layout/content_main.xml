@@ -28,8 +28,8 @@
         android:visibility="gone"
         android:layout_margin="0dp"
         android:layout_alignParentBottom = "true"
-        android:textColor="#fffefe"
-        android:background="@color/common_signin_btn_default_background"/>
+        android:textColor="#ffffff"
+        android:background="#708b4d"/>
 
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"

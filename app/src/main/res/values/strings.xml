@@ -34,4 +34,8 @@
     <string name="listado_option">Listado de puntos de interés</string>
     <string name="title_puntointermedio_list">Puntos Intermedios</string>
     <string name="title_puntointermedio_detail">Punto Intermedio Detail</string>
+    <string name="action_share">Share</string>
+    <string name="action_reply">Reply</string>
+    <string name="titulo_notificacion">Mensaje desde el estacionamiento</string>
+
 </resources>

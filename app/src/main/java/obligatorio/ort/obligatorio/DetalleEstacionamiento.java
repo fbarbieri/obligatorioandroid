@@ -135,7 +135,8 @@ public class DetalleEstacionamiento extends DialogFragment implements View.OnCli
                 .setPositiveButton(R.string.accept, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
-                        EstacionamientosServices.calificar(title,puntajeActual,mComentarioView.getText().toString(),User.getCurrentUser().getName());
+                        if(mComentarioView.getVisibility() == View.VISIBLE)
+                            EstacionamientosServices.calificar(title,puntajeActual,mComentarioView.getText().toString(),User.getCurrentUser().getName());
                     }
                 });
 

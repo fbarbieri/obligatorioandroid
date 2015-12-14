@@ -399,7 +399,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         mLocationInicial.setLongitude(recorrido.getOrigen().getUbicacion().longitude);
         esconderBotonIniciarRecorrido();
         if(recorrido.getCodigoEstacionamiento()!=null)
-            EstacionamientosServices.obtenerNotificaciones(recorrido.getCodigoEstacionamiento());
+            EstacionamientosServices.obtenerNotificaciones(recorrido.getCodigoEstacionamiento(), getApplicationContext());
     }
 
     private void guardarRecorrido(Intent data){
