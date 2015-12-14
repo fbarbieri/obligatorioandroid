@@ -73,8 +73,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         OnMapReadyCallback, LocationListener, View.OnClickListener, GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMarkerClickListener, GoogleMap.OnCameraChangeListener {
 
-    public static final int INICIAR_RECORRIDO = 1;
+    private static final int INICIAR_RECORRIDO = 1;
     private static final int INGRESAR_PUNTO_INTERMEDIO = 2;
+    private static final int VER_LISTADO = 3;
 
     private GoogleMap mMap;
     private GoogleApiClient mGoogleApiClient;
@@ -222,18 +223,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_camera) {
-            // Handle the camera action
-        } else if (id == R.id.nav_gallery) {
-
-        } else if (id == R.id.nav_slideshow) {
-
-        } else if (id == R.id.nav_manage) {
-
-        } else if (id == R.id.nav_share) {
-
-        } else if (id == R.id.nav_send) {
-
+        switch (id) {
+            case R.id.nav_listado:
+                Intent verListado = new Intent(this, PuntoIntermedioListActivity.class);
+                verListado.putExtra("testextra","testextra");
+                startActivityForResult(verListado, VER_LISTADO);
+                break;
+//            case R.id.btnGuardarPuntoIntermedio:
+//                Intent guardarPuntoIntermedio = new Intent(this, IngresarPuntoIntermedioActivity.class);
+//                guardarPuntoIntermedio.putExtra(getString(R.string.location),mLocationActual);
+//                startActivityForResult(guardarPuntoIntermedio, INGRESAR_PUNTO_INTERMEDIO);
+//                break;
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -261,6 +261,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 localizar(null,pos,est.getNombre(),iconMarkerEstacionamiento);
             }
         }
+
     }
 
     @Override
@@ -292,7 +293,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 break;
             case INGRESAR_PUNTO_INTERMEDIO:
                 if (resultCode == RESULT_OK) {
-                    if(data.getExtras()!=null || data.getExtras().size()>0){
+                    if(data.getExtras()!=null && data.getExtras().size()>0){
                         guardarPuntoIntermedio(data);
                     }
                 }
