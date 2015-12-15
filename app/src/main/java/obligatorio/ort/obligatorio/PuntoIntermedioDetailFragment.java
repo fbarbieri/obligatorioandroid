@@ -149,8 +149,9 @@ public class PuntoIntermedioDetailFragment extends Fragment {
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
         mapView.onDestroy();
+        super.onDestroy();
+
     }
 
     @Override

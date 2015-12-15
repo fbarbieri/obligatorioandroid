@@ -38,4 +38,12 @@
     <string name="action_reply">Reply</string>
     <string name="titulo_notificacion">Mensaje desde el estacionamiento</string>
 
+    <string name="no_recorrido">No hay un recorrido iniciado</string>
+    <string name="no_puntos">No hay puntos intermedios para mostrar</string>
+    <string name="titulo_ver_comentarios">Ver comentarios</string>
+    <string name="titulo_aplicacion">Estacionamientos!</string>
+    <string name="descripcion_aplicacion">Controle su estacionamiento</string>
+
+    <string name="no_recorrido_para_notificaciones">No hay un recorrido iniciado para el cuál se puedan consultar notificaciones</string>
+
 </resources>

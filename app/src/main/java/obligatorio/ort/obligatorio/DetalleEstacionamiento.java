@@ -91,7 +91,8 @@ public class DetalleEstacionamiento extends DialogFragment implements View.OnCli
         comentarios.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent verComentarios = new Intent(getContext(), IngresarPuntoIntermedioActivity.class);
+                Intent verComentarios = new Intent(getContext(), VerComentariosActivity.class);
+                verComentarios.putExtra(VerComentariosActivity.ARG_ID_ESTACIONAMIENTO, getArguments().getString("title"));
                 startActivity(verComentarios);
             }
         });

@@ -54,6 +54,7 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -118,6 +119,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         FacebookSdk.sdkInitialize(getApplicationContext());
+
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -131,6 +133,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
+        MapsInitializer.initialize(getApplicationContext());
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
@@ -227,12 +230,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
+//        int id = item.getItemId();
+//
+//        //noinspection SimplifiableIfStatement
+//        if (id == R.id.action_settings) {
+//            return true;
+//        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -242,12 +245,22 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
-
+        Recorrido recorrido = RecorridoHolder.getInstance().getRecorrido();
         switch (id) {
             case R.id.nav_listado:
-                Intent verListado = new Intent(this, PuntoIntermedioListActivity.class);
-                verListado.putExtra("testextra","testextra");
-                startActivityForResult(verListado, VER_LISTADO);
+                if (recorrido!=null && recorrido.getPuntos()!=null && recorrido.getPuntos().size()>0) {
+                    Intent verListado = new Intent(this, PuntoIntermedioListActivity.class);
+                    startActivityForResult(verListado, VER_LISTADO);
+                } else {
+                    String mensaje = "";
+                    if (recorrido == null) {
+                        mensaje = getString(R.string.no_recorrido);
+                    } else {
+                        mensaje = getString(R.string.no_puntos);
+                    }
+                    Snackbar.make(findViewById(R.id.nav_view), mensaje, Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                }
                 break;
             case R.id.nav_aviso:
                 if(RecorridoHolder.getInstance().getRecorrido()!=null && !"".equals(RecorridoHolder.getInstance().getRecorrido().getCodigoEstacionamiento())){
@@ -261,7 +274,16 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                             .setAction("Action", null).show();
                 }
                 break;
-
+            case R.id.actualizar_notificaciones:
+                if (RecorridoHolder.getInstance().getRecorrido()!=null &&
+                        RecorridoHolder.getInstance().getRecorrido().getCodigoEstacionamiento()!=null &&
+                        !RecorridoHolder.getInstance().getRecorrido().getCodigoEstacionamiento().equals("")) {
+                    EstacionamientosServices.obtenerNotificaciones(recorrido.getCodigoEstacionamiento(), getApplicationContext());
+                } else {
+                    Snackbar.make(findViewById(R.id.nav_view), getString(R.string.no_recorrido_para_notificaciones), Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                }
+                break;
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);

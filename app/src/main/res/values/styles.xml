@@ -26,4 +26,9 @@
         <item name="android:drawablePadding">16dp</item>
         <item name="android:textColor">#d2d2d2</item>
     </style>
+
+    <style name="item_tabla_comentario">
+        <item name="android:padding">16dp</item>
+        <item name="android:textSize">20sp</item>
+    </style>
 </resources>

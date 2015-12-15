@@ -15,6 +15,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
+        android:name="android.support.multidex.MultiDexApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -84,6 +85,15 @@
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="obligatorio.ort.obligatorio.PuntoIntermedioListActivity" />
+        </activity>
+        <activity
+            android:name=".VerComentariosActivity"
+            android:label="@string/titulo_ver_comentarios"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="obligatorio.ort.obligatorio.MainActivity" />
         </activity>
     </application>
 
