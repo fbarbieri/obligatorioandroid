@@ -1,6 +1,7 @@
 package obligatorio.ort.obligatorio;
 
 import android.Manifest;
+import android.app.TimePickerDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -15,12 +16,14 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.PermissionChecker;
 import android.support.v7.app.AlertDialog;
+import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -35,6 +38,7 @@ import android.view.ViewGroup;
 import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.Button;
+import android.widget.TimePicker;
 
 import com.facebook.AccessToken;
 import com.facebook.CallbackManager;
@@ -65,6 +69,7 @@ import org.json.JSONObject;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 import obligatorio.ort.obligatorio.Servicios.EstacionamientosServices;
@@ -77,7 +82,7 @@ import obligatorio.ort.obligatorio.recorrido.RecorridoManager;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener,
         OnMapReadyCallback, LocationListener, View.OnClickListener, GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMarkerClickListener, GoogleMap.OnCameraChangeListener {
+        GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMarkerClickListener, GoogleMap.OnCameraChangeListener, TimePickerDialog.OnTimeSetListener {
 
     private static final int INICIAR_RECORRIDO = 1;
     private static final int INGRESAR_PUNTO_INTERMEDIO = 2;
@@ -244,11 +249,19 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 verListado.putExtra("testextra","testextra");
                 startActivityForResult(verListado, VER_LISTADO);
                 break;
-//            case R.id.btnGuardarPuntoIntermedio:
-//                Intent guardarPuntoIntermedio = new Intent(this, IngresarPuntoIntermedioActivity.class);
-//                guardarPuntoIntermedio.putExtra(getString(R.string.location),mLocationActual);
-//                startActivityForResult(guardarPuntoIntermedio, INGRESAR_PUNTO_INTERMEDIO);
-//                break;
+            case R.id.nav_aviso:
+                if(RecorridoHolder.getInstance().getRecorrido()!=null && !"".equals(RecorridoHolder.getInstance().getRecorrido().getCodigoEstacionamiento())){
+                    final Calendar c = Calendar.getInstance();
+                    int hour = c.get(Calendar.HOUR_OF_DAY);
+                    int minute = c.get(Calendar.MINUTE);
+                    new TimePickerDialog(this,TimePickerDialog.THEME_DEVICE_DEFAULT_DARK, this, hour, minute,
+                            DateFormat.is24HourFormat(this)).show();
+                } else {
+                    Snackbar.make(findViewById(R.id.nav_view), "Debe estar en un recorrido con estacionamiento.", Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                }
+                break;
+
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -297,6 +310,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
                 alertDialog.setTitle("Finalizar Recorrido");
                 alertDialog.setMessage("Estas seguro que desa finalizar el recorrido");
+                alertDialog.setIcon(R.mipmap.terminar_recorrido);
                 alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "ACPETAR",
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int which) {
@@ -641,4 +655,30 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+    @Override
+    public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+        final Calendar actual = Calendar.getInstance();
+        Calendar horaNueva = Calendar.getInstance();
+        horaNueva.set(Calendar.HOUR_OF_DAY, hourOfDay);
+        horaNueva.set(Calendar.MINUTE, minute);
+
+
+        if(actual.after(horaNueva)){
+            Snackbar.make(findViewById(R.id.nav_view), "La hora tiene que ser mayor a la acutal", Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+        } else {
+            long milis1 = actual.getTimeInMillis();
+            long milis2 = horaNueva.getTimeInMillis();
+
+            long diff = milis2 - milis1;
+
+            long diffMinutes = diff / (60 * 1000);
+
+            EstacionamientosServices.enviarAvisos(RecorridoHolder.getInstance().getRecorrido().getCodigoEstacionamiento(),(int)diffMinutes);
+        }
+
+
+
+
+    }
 }
