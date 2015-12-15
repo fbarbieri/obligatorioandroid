@@ -208,8 +208,6 @@ public class EstacionamientosServices {
                 System.out.println("statusCode: " + statusCode);
                 System.out.println("response: " + response);
 
-
-
             }
 
             @Override

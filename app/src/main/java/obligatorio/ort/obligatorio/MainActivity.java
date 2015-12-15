@@ -676,9 +676,5 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
             EstacionamientosServices.enviarAvisos(RecorridoHolder.getInstance().getRecorrido().getCodigoEstacionamiento(),(int)diffMinutes);
         }
-
-
-
-
     }
 }
